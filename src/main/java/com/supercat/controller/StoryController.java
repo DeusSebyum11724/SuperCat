@@ -12,6 +12,7 @@ import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
+import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -100,6 +101,27 @@ public class StoryController {
         panel.setPadding(new Insets(12, 18, 12, 18));
         panel.setStyle("-fx-background-color: #F2ECE1; -fx-background-radius: 14;");
 
+        // --- etapes rejouables : chaque jalon franchi (et l'etape courante)
+        //     se touche sur la carte pour relancer son mini-jeu ---
+        int playable = Math.min(progress, total - 1);
+        map.setOnMouseClicked(e -> {
+            for (int i = 0; i <= playable; i++) {
+                if (Math.hypot(e.getX() - NODES[i][0], e.getY() - NODES[i][1]) < 26) {
+                    sceneManager.showStoryLevel(i);
+                    return;
+                }
+            }
+        });
+        map.setOnMouseMoved(e -> {
+            for (int i = 0; i <= playable; i++) {
+                if (Math.hypot(e.getX() - NODES[i][0], e.getY() - NODES[i][1]) < 26) {
+                    map.setCursor(Cursor.HAND);
+                    return;
+                }
+            }
+            map.setCursor(Cursor.DEFAULT);
+        });
+
         // --- actions ---
         HBox actions;
         if (finished) {
@@ -117,17 +139,17 @@ public class StoryController {
             Button home = UIFactory.secondaryButton("Retour a l'accueil");
             home.setOnAction(e -> sceneManager.showHome());
             actions = new HBox(10, play, home);
-            // le jalon de Nora est cliquable, comme un raccourci
-            map.setOnMouseClicked(e -> {
-                double[] node = NODES[progress];
-                if (Math.hypot(e.getX() - node[0], e.getY() - node[1]) < 30) {
-                    sceneManager.showStoryLevel(progress);
-                }
-            });
         }
         actions.setAlignment(Pos.CENTER);
 
         card.getChildren().setAll(header, map, panel, actions);
+        if (progress >= 1) {
+            Label hint = new Label(
+                    "Touche une etape deja franchie sur la carte pour la rejouer.");
+            hint.setStyle("-fx-font-size: 11px; -fx-text-fill: " + Theme.TEXT_MUTED + ";");
+            card.getChildren().add(2, hint);
+            UIFactory.fadeInUp(hint, 240);
+        }
         root.getChildren().add(card);
 
         UIFactory.fadeInUp(header, 60);

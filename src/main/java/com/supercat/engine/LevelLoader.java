@@ -59,9 +59,22 @@ public final class LevelLoader {
         return STORY_BASE + chapter;
     }
 
-    /** Difficulte effective d'un indice de niveau (gere le mode Histoire). */
+    /**
+     * Difficulte effective d'un indice de niveau.
+     *
+     *  - Campagne : la difficulte suit l'indice (0 a 11).
+     *  - Mode sans fin : depart accessible (difficulte "Moyen") puis montee
+     *    reguliere -- la premiere salle reste ainsi jouable.
+     *  - Mode Histoire : difficulte douce, croissante avec le chapitre.
+     */
     private static int difficultyOf(int index) {
-        return (index >= STORY_BASE) ? (2 + (index - STORY_BASE)) : index;
+        if (index >= STORY_BASE) {
+            return 2 + (index - STORY_BASE);
+        }
+        if (index >= CAMPAIGN_COUNT) {
+            return 3 + (index - CAMPAIGN_COUNT);
+        }
+        return index;
     }
 
     /** Nom d'un niveau. */

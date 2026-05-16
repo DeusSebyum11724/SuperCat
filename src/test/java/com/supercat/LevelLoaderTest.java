@@ -73,6 +73,20 @@ class LevelLoaderTest {
     void chaqueNiveau_aUnLibelleDeDifficulte() {
         assertEquals("Facile", LevelLoader.getDifficultyLabel(0));
         assertEquals("Expert", LevelLoader.getDifficultyLabel(10));
-        assertEquals("Extreme", LevelLoader.getDifficultyLabel(15));
+        assertEquals("Extreme", LevelLoader.getDifficultyLabel(25));
+    }
+
+    @Test
+    void leModeSansFin_demarreAvecUneDifficulteAccessible() {
+        // la premiere salle du mode sans fin (indice 12) doit rester jouable :
+        // ni "Difficile", ni "Expert", ni "Extreme".
+        int first = LevelLoader.getCampaignCount();
+        assertEquals("Moyen", LevelLoader.getDifficultyLabel(first));
+        Level firstRoom = LevelLoader.load(first);
+        Level lastCampaign = LevelLoader.load(first - 1);
+        assertTrue(firstRoom.getDogs().size() < lastCampaign.getDogs().size(),
+                "La premiere salle sans fin doit avoir moins de chiens que la fin de campagne");
+        assertTrue(firstRoom.getFish().size() < lastCampaign.getFish().size(),
+                "La premiere salle sans fin doit demander moins de poissons que la fin de campagne");
     }
 }

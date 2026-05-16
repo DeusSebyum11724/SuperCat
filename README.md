@@ -223,7 +223,7 @@ sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
 
 ## ✅ Tests unitaires
 
-34 tests répartis en 8 classes (`mvn test`) :
+35 tests répartis en 8 classes (`mvn test`) :
 
 | Classe de test | Vérifie |
 |----------------|---------|
