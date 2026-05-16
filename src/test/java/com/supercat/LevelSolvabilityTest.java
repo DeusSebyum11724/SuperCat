@@ -45,9 +45,13 @@ class LevelSolvabilityTest {
     }
 
     @Test
-    void leModeHistoire_genereDesNiveauxResolubles() {
+    void leModeHistoire_labyrinthes_sontResolubles() {
+        // Seuls les chapitres de type labyrinthe utilisent le LevelLoader ;
+        // les chapitres de glisse et de paires ont leurs propres tests.
         for (int chapter = 0; chapter < Story.chapterCount(); chapter++) {
-            assertSolvable(LevelLoader.storyIndex(chapter));
+            if (Story.game(chapter) == Story.Game.MAZE) {
+                assertSolvable(LevelLoader.storyIndex(chapter));
+            }
         }
     }
 

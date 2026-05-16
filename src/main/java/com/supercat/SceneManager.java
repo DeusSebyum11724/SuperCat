@@ -4,14 +4,17 @@ import com.supercat.controller.AdminController;
 import com.supercat.controller.CampaignController;
 import com.supercat.controller.GameController;
 import com.supercat.controller.HomeController;
+import com.supercat.controller.IceGameController;
 import com.supercat.controller.LeaderboardController;
 import com.supercat.controller.LoginController;
+import com.supercat.controller.MemoryGameController;
 import com.supercat.controller.ProfileController;
 import com.supercat.controller.SettingsController;
 import com.supercat.controller.SplashController;
 import com.supercat.controller.StoryController;
 import com.supercat.controller.StudioSplashController;
 import com.supercat.engine.LevelLoader;
+import com.supercat.engine.Story;
 import com.supercat.model.User;
 import com.supercat.service.Settings;
 import com.supercat.ui.Theme;
@@ -117,9 +120,15 @@ public class SceneManager {
         setRoot(new StoryController(this).getView(), CALM_FRAME);
     }
 
-    /** Lance le labyrinthe d'un chapitre du mode Histoire. */
+    /** Lance le mini-jeu d'un chapitre du mode Histoire (selon son type). */
     public void showStoryLevel(int chapter) {
-        setRoot(new GameController(this, LevelLoader.storyIndex(chapter)).getView(), CALM_FRAME);
+        clearKeyHandlers();
+        Parent screen = switch (Story.game(chapter)) {
+            case ICE -> new IceGameController(this, chapter).getView();
+            case MEMORY -> new MemoryGameController(this, chapter).getView();
+            case MAZE -> new GameController(this, LevelLoader.storyIndex(chapter)).getView();
+        };
+        setRoot(screen, CALM_FRAME);
     }
 
     public void showAdmin() {

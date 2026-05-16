@@ -43,6 +43,19 @@ public final class Story {
             Place.WAYPOINT, Place.WAYPOINT, Place.WAYPOINT, Place.CASTLE, Place.CASTLE
     };
 
+    /**
+     * Type de defi joue a chaque chapitre. Le mode Histoire alterne plusieurs
+     * mini-jeux : le labyrinthe classique, la glisse sur le lac gele et le
+     * jeu des paires. Chaque etape de la carte propose ainsi une epreuve
+     * differente.
+     */
+    public enum Game { MAZE, ICE, MEMORY }
+
+    private static final Game[] GAMES = {
+            Game.MAZE, Game.MAZE, Game.MEMORY, Game.ICE, Game.MAZE,
+            Game.MAZE, Game.ICE, Game.MAZE, Game.MEMORY
+    };
+
     /** Texte narratif de chaque chapitre (court, calme). */
     private static final String[] CHAPTERS = {
             "La tempete est passee. Dans sa petite chaumiere, Nora la chatte "
@@ -93,6 +106,19 @@ public final class Story {
 
     public static Place place(int chapter) {
         return PLACES[clamp(chapter)];
+    }
+
+    public static Game game(int chapter) {
+        return GAMES[clamp(chapter)];
+    }
+
+    /** Libelle court du type de defi d'un chapitre, pour l'affichage. */
+    public static String gameLabel(int chapter) {
+        return switch (game(chapter)) {
+            case MAZE -> "Labyrinthe";
+            case ICE -> "Lac glissant";
+            case MEMORY -> "Jeu des paires";
+        };
     }
 
     public static String ending() {

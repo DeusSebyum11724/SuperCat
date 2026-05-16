@@ -78,7 +78,11 @@ public class StoryController {
                 + "-fx-text-fill: " + Theme.ACCENT + ";");
         Label heading = UIFactory.heading(finished ? "Le Grand Foyer rallume"
                 : Story.room(chapter));
-        VBox header = new VBox(3, caption, heading);
+        VBox header = finished
+                ? new VBox(3, caption, heading)
+                : new VBox(5, caption, heading,
+                        UIFactory.tag("Defi  ·  " + Story.gameLabel(chapter),
+                                "#EFE7DA", Theme.TEXT_MUTED));
         header.setAlignment(Pos.CENTER);
 
         // --- carte du voyage ---

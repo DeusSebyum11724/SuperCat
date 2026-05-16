@@ -58,6 +58,10 @@ Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
   9 chapitres présentés sur une **carte de voyage** avec chaumières, château et
   étapes, en compagnie de Suie et Givre), une **campagne** de 12 niveaux, et un
   **mode sans fin** généré à l'infini.
+- **Mini-jeux variés du mode Histoire** : chaque chapitre propose une épreuve
+  différente — le **labyrinthe** classique, la **glisse sur le lac gelé**
+  (Nora glisse jusqu'à un obstacle, façon casse-tête) et le **jeu des paires**
+  (retrouver les symboles cachés). Chaque casse-tête est garanti résoluble.
 - Affichage **plein écran** avec mise à l'échelle proportionnelle.
 - **Génération procédurale** : chaque niveau est un labyrinthe généré
   automatiquement (toujours résoluble), identique à chaque fois.
@@ -88,6 +92,7 @@ Le projet implémente largement les critères de Type A (2 suffisent) :
 | 3 | **Ennemis à mouvement autonome** | Les chiens patrouillent seuls et font demi-tour aux murs. |
 | 4 | **Objets bonus / spéciaux** | Étoile (+250 points) et horloge (+10 secondes). |
 | 5 | **Animations et transitions avancées** | Sprites animés, retours visuels, transitions en fondu. |
+| 6 | **Plusieurs types de jeu** | Le mode Histoire alterne labyrinthe, glisse sur la glace et jeu des paires. |
 
 ---
 
@@ -190,12 +195,14 @@ SuperCat/
     │   │                         #   Wall, Exit, User, ScoreEntry
     │   ├── engine/               # GameEngine, CollisionManager, Level,
     │   │                         #   LevelLoader (génération procédurale),
+    │   │                         #   Story, IcePuzzle, MemoryDeck (mini-jeux),
     │   │                         #   MusicPlayer, GameState, GameListener
     │   ├── database/             # DatabaseManager (Singleton MongoDB)
     │   ├── service/              # Config, EmailService (Jakarta Mail)
-    │   ├── controller/           # Login, Home, Game, Admin,
+    │   ├── controller/           # Login, Home, Campaign, Game, Story,
+    │   │                         #   StoryMiniGame + Ice/Memory, Admin,
     │   │                         #   Profile, Leaderboard
-    │   └── ui/                   # Theme, UIFactory
+    │   └── ui/                   # Theme, UIFactory, CatArt
     └── test/java/com/supercat/   # Tests unitaires JUnit 5
 ```
 
@@ -216,7 +223,7 @@ sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
 
 ## ✅ Tests unitaires
 
-29 tests répartis en 6 classes (`mvn test`) :
+34 tests répartis en 8 classes (`mvn test`) :
 
 | Classe de test | Vérifie |
 |----------------|---------|
@@ -225,7 +232,9 @@ sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
 | `UserTest` | Le modèle `User` (rôles, score, profil, vérification). |
 | `PasswordSecurityTest` | Le hachage BCrypt des mots de passe (RM1). |
 | `LevelLoaderTest` | La génération procédurale (campagne + mode sans fin). |
-| `LevelSolvabilityTest` | Que tous les niveaux générés sont réellement résolubles. |
+| `LevelSolvabilityTest` | Que tous les labyrinthes générés sont réellement résolubles. |
+| `IcePuzzleSolvabilityTest` | Que chaque casse-tête du lac gelé est réalisable. |
+| `MemoryDeckTest` | Le plateau du jeu des paires (paires, dimensions, déterminisme). |
 
 ---
 
