@@ -89,7 +89,7 @@ public class ProfileController {
             setMessage("Adresse e-mail invalide.", true);
             return;
         }
-        db.updateEmail(user.getId(), email);
+        db.updateEmail(user.getUsername(), email);
         user.setEmail(email);
         setMessage("Adresse e-mail mise a jour !", false);
     }
@@ -116,7 +116,7 @@ public class ProfileController {
             setMessage("Les nouveaux mots de passe ne correspondent pas.", true);
             return;
         }
-        db.changePassword(user.getId(), fresh);
+        db.changePassword(user.getUsername(), fresh);
         currentPw.clear();
         newPw.clear();
         confirmPw.clear();

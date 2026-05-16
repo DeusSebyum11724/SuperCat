@@ -3,6 +3,7 @@ package com.supercat.controller;
 import com.supercat.SceneManager;
 import com.supercat.database.DatabaseManager;
 import com.supercat.model.User;
+import com.supercat.service.EmailService;
 import com.supercat.ui.Theme;
 import com.supercat.ui.UIFactory;
 import javafx.geometry.Pos;
@@ -19,9 +20,10 @@ import javafx.scene.layout.VBox;
 /**
  * Controleur de l'ecran d'authentification (cas d'utilisation UC1).
  *
- * Gere trois modes affiches dans la meme carte :
+ * Gere quatre modes affiches dans la meme carte :
  *  - connexion a un compte existant ;
  *  - creation d'un nouveau compte ;
+ *  - verification du compte par code recu par e-mail ;
  *  - recuperation (reinitialisation) du mot de passe.
  */
 public class LoginController {
@@ -32,6 +34,10 @@ public class LoginController {
     private final StackPane root;
     private final VBox card;
     private Label message;
+
+    // compte en cours de verification par e-mail
+    private String pendingUsername = "";
+    private String pendingEmail = "";
 
     public LoginController(SceneManager sceneManager) {
         this.sceneManager = sceneManager;
@@ -90,7 +96,32 @@ public class LoginController {
 
         VBox form = new VBox(12, txtUser, txtEmail, txtPass, txtConfirm,
                 message, btnRegister, back);
-        rebuildCard("Creer un compte", "Rejoins l'aventure SuperCat", form);
+        rebuildCard("Creer un compte", "Une verification par e-mail sera demandee", form);
+    }
+
+    // ===================== Mode VERIFICATION =====================
+    private void showVerifyForm() {
+        TextField txtCode = UIFactory.textField("Code a 6 chiffres");
+        message = freshMessage();
+
+        Label info = UIFactory.subtitle("Un code de verification a ete envoye a :\n" + pendingEmail);
+        info.setWrapText(true);
+        info.setStyle(info.getStyle() + " -fx-font-size: 12px; -fx-text-alignment: center;");
+
+        Button btnVerify = UIFactory.primaryButton("Verifier mon compte");
+        btnVerify.setMaxWidth(Double.MAX_VALUE);
+        btnVerify.setOnAction(e -> onVerify(txtCode.getText().trim()));
+        txtCode.setOnAction(e -> onVerify(txtCode.getText().trim()));
+
+        Button resend = UIFactory.linkButton("Renvoyer le code");
+        resend.setOnAction(e -> onResendCode());
+        Button back = UIFactory.linkButton("Retour a la connexion");
+        back.setOnAction(e -> showLoginForm());
+        HBox links = new HBox(18, resend, back);
+        links.setAlignment(Pos.CENTER);
+
+        VBox form = new VBox(12, info, txtCode, message, btnVerify, links);
+        rebuildCard("Verifie ton compte", "Active ton compte pour pouvoir jouer", form);
     }
 
     // ===================== Mode RECUPERATION =====================
@@ -125,6 +156,15 @@ public class LoginController {
             showErrorMessage("Pseudo ou mot de passe incorrect.");
             return;
         }
+        if (!user.isVerified()) {
+            // compte non verifie : on bascule sur l'ecran de verification
+            pendingUsername = user.getUsername();
+            pendingEmail = user.getEmail();
+            showVerifyForm();
+            setMessage("Ton compte n'est pas encore verifie. Saisis le code "
+                    + "recu par e-mail ou demande un renvoi.", true);
+            return;
+        }
         sceneManager.setCurrentUser(user);
         if (user.isAdmin()) {
             sceneManager.showAdmin();
@@ -154,12 +194,45 @@ public class LoginController {
             showErrorMessage("Les mots de passe ne correspondent pas.");
             return;
         }
-        if (!db.registerUser(username, password, email)) {
+        String code = db.registerUser(username, password, email);
+        if (code == null) {
             showErrorMessage("Ce pseudo est deja utilise.");
             return;
         }
-        showLoginForm();
-        setMessage("Compte cree avec succes ! Tu peux maintenant te connecter.", false);
+        // compte cree (non verifie) : envoi du code de verification par e-mail
+        pendingUsername = username;
+        pendingEmail = email;
+        showVerifyForm();
+        setMessage("Envoi du code de verification en cours...", false);
+        EmailService.sendVerificationCodeAsync(email, username, code,
+                () -> setMessage("Code de verification envoye a " + email, false),
+                err -> setMessage("Echec de l'envoi de l'e-mail. "
+                        + "Clique sur \"Renvoyer le code\".", true));
+    }
+
+    private void onVerify(String code) {
+        if (code.isEmpty()) {
+            showErrorMessage("Saisis le code recu par e-mail.");
+            return;
+        }
+        if (db.verifyAccount(pendingUsername, code)) {
+            showLoginForm();
+            setMessage("Compte verifie avec succes ! Tu peux te connecter.", false);
+        } else {
+            showErrorMessage("Code incorrect. Verifie-le ou demande un renvoi.");
+        }
+    }
+
+    private void onResendCode() {
+        String code = db.regenerateCode(pendingUsername);
+        if (code == null) {
+            showErrorMessage("Compte introuvable.");
+            return;
+        }
+        setMessage("Envoi d'un nouveau code en cours...", false);
+        EmailService.sendVerificationCodeAsync(pendingEmail, pendingUsername, code,
+                () -> setMessage("Nouveau code envoye a " + pendingEmail, false),
+                err -> setMessage("Echec de l'envoi de l'e-mail : " + err, true));
     }
 
     private void onRecover(String username, String email, String password, String confirm) {

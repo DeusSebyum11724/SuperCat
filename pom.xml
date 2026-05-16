@@ -33,11 +33,25 @@
             <version>${javafx.version}</version>
         </dependency>
 
-        <!-- SQLite : base de donnees embarquee (USERS, SCORES) -->
+        <!-- MongoDB : base de donnees (comptes USERS et scores SCORES) -->
         <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-            <version>3.47.1.0</version>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>5.2.1</version>
+        </dependency>
+
+        <!-- Jakarta Mail : envoi des e-mails de verification de compte -->
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>jakarta.mail</artifactId>
+            <version>2.0.1</version>
+        </dependency>
+
+        <!-- Implementation SLF4J silencieuse (journalisation du pilote MongoDB) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>2.0.16</version>
         </dependency>
 
         <!-- BCrypt : hachage securise des mots de passe (RM1) -->

@@ -1,0 +1,21 @@
+# =====================================================================
+#  Modele de configuration SuperCat
+#
+#  1. Copiez ce fichier sous le nom "config.properties"
+#  2. Renseignez vos propres identifiants ci-dessous
+#
+#  Le fichier config.properties est exclu de Git (.gitignore) : les
+#  identifiants ne sont donc jamais publies sur le depot.
+#
+#  Alternative : definir les variables d'environnement
+#  MONGODB_URI_CATALOG, GMAIL_USER et GMAIL_APP_PASSWORD.
+# =====================================================================
+
+# Chaine de connexion MongoDB (Atlas)
+mongodb.uri=mongodb+srv://UTILISATEUR:MOTDEPASSE@cluster.mongodb.net/supercat
+
+# Compte Gmail d'envoi des e-mails de verification.
+# Le mot de passe est un "mot de passe d'application" Google
+# (https://myaccount.google.com/apppasswords).
+gmail.user=votre.adresse@gmail.com
+gmail.password=xxxx xxxx xxxx xxxx

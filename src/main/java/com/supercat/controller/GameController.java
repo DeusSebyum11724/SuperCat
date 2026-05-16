@@ -5,6 +5,7 @@ import com.supercat.database.DatabaseManager;
 import com.supercat.engine.GameEngine;
 import com.supercat.engine.GameListener;
 import com.supercat.engine.GameState;
+import com.supercat.engine.MusicPlayer;
 import com.supercat.model.User;
 import com.supercat.ui.Theme;
 import com.supercat.ui.UIFactory;
@@ -31,12 +32,8 @@ import java.util.Set;
  * Controleur de l'ecran de jeu (cas d'utilisation UC2 / UC3).
  *
  * Il cree le moteur de jeu, affiche la zone de jeu (canvas), le bandeau
- * d'informations (HUD : score, temps, poissons) et reagit aux evenements du
- * moteur via l'interface GameListener (fin de niveau, Game Over, victoire).
- *
- * Conforme au diagramme de classes : possede le moteur, l'ensemble des
- * touches actives, et expose handleKeyPressed/handleKeyReleased et
- * saveFinalScore().
+ * d'informations (HUD), joue la musique d'ambiance, et reagit aux evenements
+ * du moteur via l'interface GameListener (fin de niveau, Game Over, victoire).
  */
 public class GameController implements GameListener {
 
@@ -44,6 +41,7 @@ public class GameController implements GameListener {
     private final Set<KeyCode> activeKeys = new HashSet<>();
 
     private GameEngine engine;
+    private MusicPlayer music;
     private BorderPane root;
     private StackPane overlay;
 
@@ -67,6 +65,7 @@ public class GameController implements GameListener {
     private void initialize() {
         Canvas canvas = new Canvas(Theme.CANVAS_WIDTH, Theme.CANVAS_HEIGHT);
         engine = new GameEngine(canvas.getGraphicsContext2D(), activeKeys, this);
+        music = new MusicPlayer();
 
         overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
@@ -89,11 +88,12 @@ public class GameController implements GameListener {
 
         engine.startNewGame();
         engine.start();
+        music.start();
     }
 
     /** Construit le bandeau d'informations affiche au-dessus du jeu. */
     private HBox buildHud() {
-        HBox hud = new HBox(20);
+        HBox hud = new HBox(16);
         hud.setAlignment(Pos.CENTER_LEFT);
         hud.setPadding(new Insets(12, 18, 12, 18));
         hud.setStyle("-fx-background-color: #243140;");
@@ -101,17 +101,22 @@ public class GameController implements GameListener {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        Button musicBtn = UIFactory.secondaryButton("Son ON");
+        musicBtn.setOnAction(e -> {
+            music.setMuted(!music.isMuted());
+            musicBtn.setText(music.isMuted() ? "Son OFF" : "Son ON");
+        });
         Button pauseBtn = UIFactory.secondaryButton("Pause");
         pauseBtn.setOnAction(e -> togglePause());
         Button quitBtn = UIFactory.dangerButton("Quitter");
         quitBtn.setOnAction(e -> exitToMenu());
 
         hud.getChildren().addAll(
-                statBlock("NIVEAU", levelValue, 180),
-                statBlock("SCORE", scoreValue, 80),
+                statBlock("NIVEAU", levelValue, 165),
+                statBlock("SCORE", scoreValue, 78),
                 statBlock("POISSONS", fishValue, 85),
-                statBlock("TEMPS", timeValue, 70),
-                spacer, pauseBtn, quitBtn);
+                statBlock("TEMPS", timeValue, 68),
+                spacer, musicBtn, pauseBtn, quitBtn);
         return hud;
     }
 
@@ -165,6 +170,9 @@ public class GameController implements GameListener {
 
     @Override
     public void onLevelComplete() {
+        // le score est enregistre des qu'un niveau est reussi : le classement
+        // se remplit ainsi meme sans terminer les trois niveaux.
+        saveFinalScore();
         Button next = UIFactory.successButton("Niveau suivant");
         next.setOnAction(e -> {
             hideOverlay();
@@ -174,7 +182,7 @@ public class GameController implements GameListener {
         menu.setOnAction(e -> exitToMenu());
         showOverlay("Niveau termine !",
                 "Bravo ! Tu as termine le niveau " + engine.getLevelNumber() + ".\n"
-                        + "Score actuel : " + engine.getScore() + " points.", next, menu);
+                        + "Score actuel : " + engine.getScore() + " points (enregistre).", next, menu);
     }
 
     @Override
@@ -213,9 +221,10 @@ public class GameController implements GameListener {
     }
 
     /**
-     * Enregistre le score final en base de donnees (UC4). Retourne true s'il
-     * s'agit d'un nouveau record personnel. N'est appele qu'en cas de
-     * victoire : un Game Over n'enregistre jamais le score (regle RM9).
+     * Enregistre le score courant en base de donnees (UC4). Retourne true
+     * s'il s'agit d'un nouveau record personnel. Appele a la fin de chaque
+     * niveau reussi et a la victoire finale ; jamais lors d'un Game Over
+     * (regle metier RM9).
      */
     public boolean saveFinalScore() {
         User user = sceneManager.getCurrentUser();
@@ -223,8 +232,8 @@ public class GameController implements GameListener {
             return false;
         }
         DatabaseManager db = DatabaseManager.getInstance();
-        boolean newRecord = db.updateHighScore(user.getId(), engine.getScore());
-        user.setHighScore(db.getHighScore(user.getId()));
+        boolean newRecord = db.updateHighScore(user.getUsername(), engine.getScore());
+        user.setHighScore(db.getHighScore(user.getUsername()));
         return newRecord;
     }
 
@@ -253,6 +262,7 @@ public class GameController implements GameListener {
 
     private void exitToMenu() {
         engine.stop();
+        music.stop();
         sceneManager.showMenu();
     }
 

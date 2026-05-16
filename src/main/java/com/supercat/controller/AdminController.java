@@ -98,11 +98,11 @@ public class AdminController {
         table.setItems(filtered);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setPlaceholder(new Label("Aucun compte a afficher."));
-        table.getColumns().add(col("ID", "id", 50));
-        table.getColumns().add(col("Pseudo", "username", 130));
+        table.getColumns().add(col("Pseudo", "username", 120));
         table.getColumns().add(col("E-mail", "email", 175));
-        table.getColumns().add(col("Role", "role", 75));
-        table.getColumns().add(col("Meilleur score", "highScore", 110));
+        table.getColumns().add(col("Role", "role", 70));
+        table.getColumns().add(col("Verifie", "verifiedLabel", 70));
+        table.getColumns().add(col("Meilleur score", "highScore", 105));
         VBox.setVgrow(table, Priority.ALWAYS);
 
         Button delete = UIFactory.dangerButton("Supprimer le compte");
@@ -169,13 +169,13 @@ public class AdminController {
             return;
         }
         User current = sceneManager.getCurrentUser();
-        if (current != null && selected.getId() == current.getId()) {
+        if (current != null && selected.getUsername().equals(current.getUsername())) {
             info("Tu ne peux pas supprimer ton propre compte.");
             return;
         }
         if (confirm("Supprimer definitivement le compte \"" + selected.getUsername()
                 + "\" ainsi que tous ses scores ?")) {
-            db.deleteUser(selected.getId());
+            db.deleteUser(selected.getUsername());
             refresh();
         }
     }
@@ -187,7 +187,7 @@ public class AdminController {
             return;
         }
         if (confirm("Reinitialiser tous les scores du joueur \"" + selected.getUsername() + "\" ?")) {
-            db.resetUserScores(selected.getId());
+            db.resetUserScores(selected.getUsername());
             refresh();
         }
     }

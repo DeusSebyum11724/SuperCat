@@ -4,7 +4,10 @@ target/
 # Compiled class files
 *.class
 
-# Base de donnees SQLite generee a l'execution
+# Identifiants sensibles (MongoDB, Gmail) - NE JAMAIS COMMITTER
+config.properties
+
+# Base de donnees SQLite (ancienne version)
 *.db
 *.db-journal
 *.sqlite
