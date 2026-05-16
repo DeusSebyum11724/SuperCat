@@ -1,0 +1,40 @@
+# Maven build output
+target/
+
+# Compiled class files
+*.class
+
+# Base de donnees SQLite generee a l'execution
+*.db
+*.db-journal
+*.sqlite
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# IDE - NetBeans
+nbproject/
+nb-configuration.xml
+
+# IDE - VS Code
+.vscode/
+
+# Serveur de build Java (Metals / Bloop)
+.bloop/
+.metals/
+
+# Logs
+*.log
+
+# Fichiers systeme
+.DS_Store
+Thumbs.db
