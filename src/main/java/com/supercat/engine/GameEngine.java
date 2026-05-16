@@ -315,6 +315,7 @@ public class GameEngine {
     public GameState getState() { return state; }
     public int getScore() { return score; }
     public int getTimeLeft() { return timeLeft; }
+    public int getTimeLimit() { return level != null ? level.getTimeLimit() : 1; }
     public int getLevelIndex() { return levelIndex; }
     public String getLevelName() { return level != null ? level.getName() : ""; }
     public String getLevelDifficulty() { return level != null ? level.getDifficultyLabel() : ""; }

@@ -1,7 +1,14 @@
 package com.supercat.ui;
 
+import javafx.animation.Animation;
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
+import javafx.animation.ParallelTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
@@ -11,6 +18,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 
 /**
  * Fabrique de composants graphiques deja stylises.
@@ -194,5 +202,36 @@ public final class UIFactory {
         g.strokeLine(cx + r * 0.25, cy + r * 0.28, cx + r * 1.2, cy + r * 0.08);
         g.strokeLine(cx + r * 0.25, cy + r * 0.4, cx + r * 1.2, cy + r * 0.45);
         return canvas;
+    }
+
+    // ----- Animations -----
+
+    /** Anime l'apparition d'un noeud : fondu accompagne d'un leger glissement. */
+    public static void fadeInUp(Node node, double delayMillis) {
+        node.setOpacity(0);
+        node.setTranslateY(18);
+        FadeTransition fade = new FadeTransition(Duration.millis(460), node);
+        fade.setFromValue(0);
+        fade.setToValue(1);
+        TranslateTransition slide = new TranslateTransition(Duration.millis(460), node);
+        slide.setFromY(18);
+        slide.setToY(0);
+        ParallelTransition animation = new ParallelTransition(fade, slide);
+        animation.setDelay(Duration.millis(delayMillis));
+        animation.setInterpolator(Interpolator.EASE_OUT);
+        animation.play();
+    }
+
+    /** Anime un noeud en respiration continue (battement d'echelle discret). */
+    public static void breathe(Node node, double maxScale, double durationMillis) {
+        ScaleTransition pulse = new ScaleTransition(Duration.millis(durationMillis), node);
+        pulse.setFromX(1);
+        pulse.setFromY(1);
+        pulse.setToX(maxScale);
+        pulse.setToY(maxScale);
+        pulse.setAutoReverse(true);
+        pulse.setCycleCount(Animation.INDEFINITE);
+        pulse.setInterpolator(Interpolator.EASE_BOTH);
+        pulse.play();
     }
 }

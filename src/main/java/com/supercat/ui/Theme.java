@@ -24,10 +24,10 @@ public final class Theme {
             "-fx-background-color: linear-gradient(to bottom, "
             + "#B7A6CE 0%, #D6B7C2 55%, #F0CDB6 100%);";
 
-    // ----- Carte (panneau) : creme doux, coins tres arrondis, ombre legere -----
+    // ----- Panneau : champ de couleur creme, plat, ombre tres discrete -----
     public static final String CARD_STYLE =
-            "-fx-background-color: #FBF7F0; -fx-background-radius: 24; "
-            + "-fx-effect: dropshadow(gaussian, rgba(74,68,88,0.22), 26, 0.12, 0, 10);";
+            "-fx-background-color: #FBF7F0; -fx-background-radius: 22; "
+            + "-fx-effect: dropshadow(gaussian, rgba(60,56,82,0.11), 16, 0, 0, 4);";
 
     // ----- Couleurs de l'interface -----
     public static final String ACCENT = "#E08A6F";        // corail doux

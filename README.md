@@ -51,11 +51,13 @@ Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
 - **Génération procédurale** : chaque niveau est un labyrinthe généré
   automatiquement (toujours résoluble), identique à chaque fois.
 - **Musique d'ambiance** synthétisée + bouton activer/désactiver.
-- **Animations** : démarche du chat, patrouille des chiens, flottement des
-  poissons, pulsation des bonus, transitions en fondu.
-- HUD affichant **la difficulté du niveau** et les autres statistiques utiles
-  (score, poissons, temps).
+- **Écran-titre animé** à l'ouverture, et animations partout : démarche du
+  chat, patrouille des chiens, apparition échelonnée des niveaux, fondus.
+- **HUD schématique** : barre de temps, points pour les poissons, étiquette
+  de difficulté du niveau.
 - **Détection de collisions**, calcul du score, fin de partie et redémarrage.
+- Chaque niveau (campagne et mode sans fin) est **vérifié résoluble** par un
+  test automatisé (parcours en largeur du labyrinthe).
 
 ### Pour l'administrateur
 - Consulter, **rechercher**, **supprimer** des comptes joueurs.
@@ -203,7 +205,7 @@ sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
 
 ## ✅ Tests unitaires
 
-26 tests répartis en 5 classes (`mvn test`) :
+28 tests répartis en 6 classes (`mvn test`) :
 
 | Classe de test | Vérifie |
 |----------------|---------|
@@ -212,6 +214,7 @@ sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
 | `UserTest` | Le modèle `User` (rôles, score, profil, vérification). |
 | `PasswordSecurityTest` | Le hachage BCrypt des mots de passe (RM1). |
 | `LevelLoaderTest` | La génération procédurale (campagne + mode sans fin). |
+| `LevelSolvabilityTest` | Que tous les niveaux générés sont réellement résolubles. |
 
 ---
 

@@ -39,7 +39,7 @@ public class App extends Application {
         stage.setResizable(false);
         stage.centerOnScreen();
 
-        sceneManager.showLogin();
+        sceneManager.showSplash();
         stage.show();
     }
 

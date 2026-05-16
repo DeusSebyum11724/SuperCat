@@ -12,6 +12,7 @@ import com.supercat.ui.Theme;
 import com.supercat.ui.UIFactory;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -32,13 +33,15 @@ import java.util.Set;
 /**
  * Controleur de l'ecran de jeu (cas d'utilisation UC2 / UC3).
  *
- * Gere deux modes :
- *  - campagne : un niveau choisi sur la page d'accueil, score enregistre
- *    par niveau (rejouable pour ameliorer son score) ;
- *  - mode sans fin : des salles generees a l'infini, difficulte croissante,
- *    le score retenu est le nombre de salles franchies.
+ * Gere la campagne (un niveau choisi, score enregistre par niveau) et le
+ * mode sans fin (salles enchainees a l'infini). Le bandeau d'informations
+ * adopte un style schematique : barre de temps qui se vide, points pour les
+ * poissons, etiquette de difficulte.
  */
 public class GameController implements GameListener {
+
+    private static final int MAX_PIPS = 18;
+    private static final double TIMER_WIDTH = 116;
 
     private final SceneManager sceneManager;
     private final Set<KeyCode> activeKeys = new HashSet<>();
@@ -55,10 +58,14 @@ public class GameController implements GameListener {
     private StackPane overlay;
 
     private final Label levelValue = new Label();
-    private final Label difficultyValue = new Label();
+    private final Label levelCaption = new Label();
+    private final Label difficultyTag = new Label();
     private final Label scoreValue = new Label();
-    private final Label fishValue = new Label();
+    private final Region[] fishPips = new Region[MAX_PIPS];
+    private final Region timerFill = new Region();
     private final Label timeValue = new Label();
+    private int lastCollected = -1;
+    private int lastTotal = -1;
 
     public GameController(SceneManager sceneManager, int levelIndex, boolean endless) {
         this.sceneManager = sceneManager;
@@ -81,7 +88,7 @@ public class GameController implements GameListener {
         music = new MusicPlayer();
 
         overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(62,56,82,0.62);");
+        overlay.setStyle("-fx-background-color: rgba(62,56,82,0.66);");
         overlay.setVisible(false);
 
         StackPane gameArea = new StackPane(canvas, overlay);
@@ -103,55 +110,79 @@ public class GameController implements GameListener {
         music.start();
     }
 
+    /** Bandeau d'informations schematique affiche au-dessus du jeu. */
     private HBox buildHud() {
-        HBox hud = new HBox(14);
+        HBox hud = new HBox(15);
         hud.setAlignment(Pos.CENTER_LEFT);
-        hud.setPadding(new Insets(11, 16, 11, 16));
+        hud.setPadding(new Insets(10, 16, 10, 16));
         hud.setStyle("-fx-background-color: " + Theme.HUD_BG + ";");
+
+        levelValue.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
+        levelCaption.setStyle("-fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: #ABA2BC;");
+        VBox levelBlock = new VBox(2, levelCaption, levelValue);
+        levelBlock.setMinWidth(132);
+
+        VBox difficultyBlock = hudBlock("DIFFICULTE", difficultyTag);
+        scoreValue.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
+        VBox scoreBlock = hudBlock("SCORE", scoreValue);
+
+        HBox pipRow = new HBox(3);
+        pipRow.setAlignment(Pos.CENTER_LEFT);
+        for (int i = 0; i < MAX_PIPS; i++) {
+            Region pip = new Region();
+            pip.setMinSize(6, 6);
+            pip.setPrefSize(6, 6);
+            pip.setMaxSize(6, 6);
+            fishPips[i] = pip;
+            pipRow.getChildren().add(pip);
+        }
+        VBox fishBlock = hudBlock("POISSONS", pipRow);
+
+        StackPane timerTrack = new StackPane(timerFill);
+        timerTrack.setMinSize(TIMER_WIDTH, 8);
+        timerTrack.setMaxSize(TIMER_WIDTH, 8);
+        timerTrack.setStyle("-fx-background-color: #564E6E; -fx-background-radius: 4;");
+        timerFill.setMinHeight(8);
+        timerFill.setMaxHeight(8);
+        StackPane.setAlignment(timerFill, Pos.CENTER_LEFT);
+        timeValue.setStyle("-fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #ABA2BC;");
+        HBox timerLine = new HBox(8, timerTrack, timeValue);
+        timerLine.setAlignment(Pos.CENTER_LEFT);
+        VBox timeBlock = hudBlock("TEMPS", timerLine);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button musicBtn = hudButton("Son ON");
+        Button musicBtn = hudButton("Son");
         musicBtn.setOnAction(e -> {
             music.setMuted(!music.isMuted());
-            musicBtn.setText(music.isMuted() ? "Son OFF" : "Son ON");
+            musicBtn.setText(music.isMuted() ? "Muet" : "Son");
         });
         Button pauseBtn = hudButton("Pause");
         pauseBtn.setOnAction(e -> togglePause());
         Button quitBtn = hudButton("Quitter");
         quitBtn.setOnAction(e -> exitToHome());
 
-        hud.getChildren().addAll(
-                statBlock("NIVEAU", levelValue, 150),
-                statBlock("DIFFICULTE", difficultyValue, 92),
-                statBlock("SCORE", scoreValue, 78),
-                statBlock("POISSONS", fishValue, 86),
-                statBlock("TEMPS", timeValue, 66),
-                spacer, musicBtn, pauseBtn, quitBtn);
+        hud.getChildren().addAll(levelBlock, difficultyBlock, scoreBlock, fishBlock,
+                timeBlock, spacer, musicBtn, pauseBtn, quitBtn);
         return hud;
     }
 
-    private VBox statBlock(String caption, Label valueLabel, double minWidth) {
+    private VBox hudBlock(String caption, Node value) {
         Label cap = new Label(caption);
-        cap.setStyle("-fx-font-size: 9.5px; -fx-font-weight: bold; -fx-text-fill: #ABA2BC;");
-        valueLabel.setStyle(valueStyle("white"));
-        VBox box = new VBox(2, cap, valueLabel);
-        box.setMinWidth(minWidth);
+        cap.setStyle("-fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: #ABA2BC;");
+        VBox box = new VBox(3, cap, value);
+        box.setAlignment(Pos.CENTER_LEFT);
         return box;
-    }
-
-    private String valueStyle(String color) {
-        return "-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";";
     }
 
     private Button hudButton(String text) {
         Button b = new Button(text);
         String base = "-fx-background-color: #564E6E; -fx-text-fill: white; -fx-cursor: hand; "
-                + "-fx-font-size: 12.5px; -fx-font-weight: bold; -fx-background-radius: 16; "
+                + "-fx-font-size: 12px; -fx-font-weight: bold; -fx-background-radius: 15; "
                 + "-fx-padding: 7 14 7 14;";
         b.setStyle(base);
-        b.setOnMouseEntered(e -> b.setStyle(base.replace("#564E6E", "#675E84")));
+        b.setOnMouseEntered(e -> b.setStyle(base.replace("#564E6E", "#6B6189")));
         b.setOnMouseExited(e -> b.setStyle(base));
         return b;
     }
@@ -177,24 +208,41 @@ public class GameController implements GameListener {
     // =====================================================================
     @Override
     public void onTick() {
-        if (endless) {
-            levelValue.setText(engine.getLevelName());
-        } else {
-            levelValue.setText(engine.getLevelName()
-                    + "  (" + (currentIndex + 1) + "/" + LevelLoader.getCampaignCount() + ")");
-        }
-        difficultyValue.setText(engine.getLevelDifficulty());
-        difficultyValue.setStyle(valueStyle(difficultyColor(engine.getLevelDifficulty())));
+        levelValue.setText(engine.getLevelName());
+        levelCaption.setText(endless ? "MODE SANS FIN" : "NIVEAU " + (currentIndex + 1));
+
+        String difficulty = engine.getLevelDifficulty();
+        difficultyTag.setText(difficulty);
+        difficultyTag.setStyle("-fx-background-color: " + difficultyColor(difficulty) + "; "
+                + "-fx-text-fill: white; -fx-background-radius: 9; -fx-padding: 2 9 2 9; "
+                + "-fx-font-size: 11px; -fx-font-weight: bold;");
+
         scoreValue.setText(String.valueOf(engine.getScore()));
 
         int collected = engine.getFishCollected();
         int total = engine.getFishTotal();
-        fishValue.setText(collected + " / " + total);
-        fishValue.setStyle(valueStyle(collected >= total ? "#9BD0B4" : "white"));
+        if (collected != lastCollected || total != lastTotal) {
+            for (int i = 0; i < MAX_PIPS; i++) {
+                boolean shown = i < total;
+                fishPips[i].setVisible(shown);
+                fishPips[i].setManaged(shown);
+                fishPips[i].setStyle("-fx-background-radius: 3; -fx-background-color: "
+                        + (i < collected ? "#FFD23F" : "#564E6E") + ";");
+            }
+            lastCollected = collected;
+            lastTotal = total;
+        }
 
         int t = engine.getTimeLeft();
+        double fraction = Math.min(1.0, t / (double) Math.max(1, engine.getTimeLimit()));
+        double width = fraction * TIMER_WIDTH;
+        timerFill.setMinWidth(width);
+        timerFill.setPrefWidth(width);
+        timerFill.setMaxWidth(width);
+        boolean low = t <= 10;
+        timerFill.setStyle("-fx-background-radius: 4; -fx-background-color: "
+                + (low ? "#E79A8E" : Theme.ACCENT) + ";");
         timeValue.setText(String.format("%d:%02d", t / 60, t % 60));
-        timeValue.setStyle(valueStyle(t <= 10 ? "#E79A8E" : "white"));
     }
 
     @Override
@@ -205,34 +253,33 @@ public class GameController implements GameListener {
             cont.setOnAction(e -> advanceLevel());
             Button quit = UIFactory.secondaryButton("Quitter");
             quit.setOnAction(e -> exitToHome());
-            showOverlay("Salle franchie !",
-                    "Salles franchies dans cette partie : " + endlessCleared
-                            + "\nLa difficulte continue d'augmenter...", cont, quit);
+            showOverlay("Salle franchie",
+                    "Salles franchies : " + endlessCleared + "\nLa difficulte augmente.",
+                    cont, quit);
         } else {
             boolean record = saveCampaignScore();
             int best = currentBest();
             boolean hasNext = currentIndex + 1 < LevelLoader.getCampaignCount();
+            String detail = "Score : " + engine.getScore()
+                    + (record ? "\nNouveau record personnel"
+                              : "\nMeilleur score : " + best);
 
-            Button replay = UIFactory.secondaryButton("Rejouer ce niveau");
+            Button replay = UIFactory.secondaryButton("Rejouer");
             replay.setOnAction(e -> {
                 hideOverlay();
                 engine.restart();
             });
-            Button home = UIFactory.secondaryButton("Page d'accueil");
+            Button home = UIFactory.secondaryButton("Accueil");
             home.setOnAction(e -> exitToHome());
 
-            String detail = "Score du niveau : " + engine.getScore() + " points\n"
-                    + (record ? "Nouveau record pour ce niveau !"
-                              : "Ton meilleur : " + best + " points");
             if (hasNext) {
                 Button next = UIFactory.primaryButton("Niveau suivant");
                 next.setOnAction(e -> advanceLevel());
-                showOverlay("Niveau termine !", detail, next, replay, home);
+                showOverlay("Niveau termine", detail, next, replay, home);
             } else {
-                showOverlay("Campagne terminee !",
-                        detail + "\n\nTu as termine les "
-                                + LevelLoader.getCampaignCount() + " niveaux. Bravo !",
-                        replay, home);
+                showOverlay("Campagne terminee",
+                        detail + "\n\nTu as franchi les "
+                                + LevelLoader.getCampaignCount() + " niveaux.", replay, home);
             }
         }
     }
@@ -240,27 +287,25 @@ public class GameController implements GameListener {
     @Override
     public void onGameOver() {
         String reason = engine.getTimeLeft() <= 0
-                ? "Le temps est ecoule !"
-                : "Un chien t'a attrape !";
+                ? "Le temps est ecoule."
+                : "Un chien t'a attrape.";
         if (endless) {
             finishEndlessRun();
             Button retry = UIFactory.primaryButton("Recommencer");
             retry.setOnAction(e -> restartEndless());
-            Button home = UIFactory.secondaryButton("Page d'accueil");
+            Button home = UIFactory.secondaryButton("Accueil");
             home.setOnAction(e -> exitToHome());
             showOverlay("Game Over",
-                    reason + "\n\nTu as franchi " + endlessCleared + " salle(s) sans fin.",
-                    retry, home);
+                    reason + "\nSalles franchies : " + endlessCleared, retry, home);
         } else {
             Button retry = UIFactory.primaryButton("Reessayer");
             retry.setOnAction(e -> {
                 hideOverlay();
                 engine.restart();
             });
-            Button home = UIFactory.secondaryButton("Page d'accueil");
+            Button home = UIFactory.secondaryButton("Accueil");
             home.setOnAction(e -> exitToHome());
-            showOverlay("Game Over",
-                    reason + "\n\nScore non enregistre (regle RM9).", retry, home);
+            showOverlay("Game Over", reason + "\nScore non enregistre.", retry, home);
         }
     }
 
@@ -286,7 +331,6 @@ public class GameController implements GameListener {
         return DatabaseManager.getInstance().getLevelBest(user.getUsername(), currentIndex);
     }
 
-    /** Enregistre une fois le resultat du mode sans fin (salles franchies). */
     private void finishEndlessRun() {
         if (endlessSaved || !endless || endlessCleared <= 0) {
             return;
@@ -304,6 +348,7 @@ public class GameController implements GameListener {
     private void advanceLevel() {
         hideOverlay();
         currentIndex++;
+        lastCollected = -1;
         engine.playLevel(currentIndex);
     }
 
@@ -312,6 +357,7 @@ public class GameController implements GameListener {
         currentIndex = startIndex;
         endlessCleared = 0;
         endlessSaved = false;
+        lastCollected = -1;
         engine.playLevel(currentIndex);
     }
 
@@ -330,8 +376,7 @@ public class GameController implements GameListener {
             resume.setOnAction(e -> resumeGame());
             Button quit = UIFactory.secondaryButton("Quitter");
             quit.setOnAction(e -> exitToHome());
-            showOverlay("Pause", "La partie est en pause.\n"
-                    + "Appuie sur P pour reprendre.", resume, quit);
+            showOverlay("Pause", "Appuie sur P pour reprendre.", resume, quit);
         } else if (state == GameState.PAUSED) {
             resumeGame();
         }
@@ -344,11 +389,11 @@ public class GameController implements GameListener {
 
     private String difficultyColor(String difficulty) {
         return switch (difficulty) {
-            case "Facile" -> "#9BD0B4";
-            case "Moyen" -> "#A6C3D6";
-            case "Difficile" -> "#EAC98A";
-            case "Expert" -> "#EFAE99";
-            default -> "#E79A8E";
+            case "Facile" -> Theme.SUCCESS;
+            case "Moyen" -> Theme.SECONDARY;
+            case "Difficile" -> Theme.GOLD;
+            case "Expert" -> Theme.ACCENT;
+            default -> Theme.DANGER;
         };
     }
 
@@ -357,25 +402,26 @@ public class GameController implements GameListener {
     // =====================================================================
     private void showOverlay(String headingText, String detailText, Button... actions) {
         VBox box = UIFactory.card();
-        box.setMaxWidth(410);
+        box.setMaxWidth(380);
         box.setMaxHeight(Region.USE_PREF_SIZE);
+        box.setSpacing(16);
 
         Label detail = UIFactory.body(detailText);
         detail.setWrapText(true);
-        detail.setMaxWidth(340);
-        detail.setStyle(detail.getStyle() + " -fx-font-size: 15px; -fx-text-alignment: center;");
+        detail.setMaxWidth(300);
+        detail.setStyle(detail.getStyle() + " -fx-font-size: 14px; -fx-text-alignment: center;");
 
-        VBox buttons = new VBox(10, actions);
+        VBox buttons = new VBox(9, actions);
         buttons.setFillWidth(true);
         buttons.setAlignment(Pos.CENTER);
         for (Button action : actions) {
             action.setMaxWidth(Double.MAX_VALUE);
         }
 
-        box.getChildren().setAll(UIFactory.catFace(66), UIFactory.heading(headingText),
-                detail, buttons);
+        box.getChildren().setAll(UIFactory.heading(headingText), detail, buttons);
         overlay.getChildren().setAll(box);
         overlay.setVisible(true);
+        UIFactory.fadeInUp(box, 0);
     }
 
     private void hideOverlay() {

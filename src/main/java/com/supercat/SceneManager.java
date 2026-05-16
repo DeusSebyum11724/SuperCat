@@ -6,6 +6,7 @@ import com.supercat.controller.HomeController;
 import com.supercat.controller.LeaderboardController;
 import com.supercat.controller.LoginController;
 import com.supercat.controller.ProfileController;
+import com.supercat.controller.SplashController;
 import com.supercat.engine.LevelLoader;
 import com.supercat.model.User;
 import javafx.animation.FadeTransition;
@@ -31,6 +32,12 @@ public class SceneManager {
     }
 
     // ----- Navigation entre ecrans -----
+
+    /** Ecran-titre anime affiche au lancement de l'application. */
+    public void showSplash() {
+        clearKeyHandlers();
+        setRoot(new SplashController(this).getView());
+    }
 
     public void showLogin() {
         clearKeyHandlers();

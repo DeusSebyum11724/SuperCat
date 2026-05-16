@@ -87,7 +87,9 @@ public final class LevelLoader {
         double dogSpeed = Math.min(1.4 + diff * 0.13, 3.2);
         int passagesPerWall = clamp(4 - diff / 3, 1, 4);
         int bonusCount = clamp(1 + diff / 4, 1, 3);
-        int timeLimit = Math.min(55 + fishCount * 5 + dogCount * 3, 140);
+        // temps genereux : chaque niveau (campagne comme mode sans fin) reste
+        // realisable par un joueur, meme aux difficultes les plus elevees
+        int timeLimit = Math.min(60 + fishCount * 6 + dogCount * 2, 180);
 
         boolean[][] grid = horizontal
                 ? buildHorizontal(rng, passagesPerWall)
@@ -115,12 +117,21 @@ public final class LevelLoader {
             fishCells.add(pool.get(p++));
         }
         List<int[]> dogCells = new ArrayList<>();
+        int[] dogsPerCorridor = new int[Math.max(ROWS, COLS)];
         while (dogCells.size() < dogCount && p < pool.size()) {
             int[] cell = pool.get(p++);
-            // un chien ne doit pas apparaitre trop pres du chat (depart equitable)
-            if (Math.abs(cell[0] - catR) + Math.abs(cell[1] - catC) >= 4) {
-                dogCells.add(cell);
+            // un chien n'apparait pas trop pres du chat (depart equitable)
+            if (Math.abs(cell[0] - catR) + Math.abs(cell[1] - catC) < 4) {
+                continue;
             }
+            // au plus 2 chiens par couloir : un couloir reste toujours
+            // franchissable, le niveau demeure donc realisable par le joueur
+            int corridor = horizontal ? cell[0] : cell[1];
+            if (dogsPerCorridor[corridor] >= 2) {
+                continue;
+            }
+            dogsPerCorridor[corridor]++;
+            dogCells.add(cell);
         }
         List<int[]> bonusCells = new ArrayList<>();
         while (bonusCells.size() < bonusCount && p < pool.size()) {

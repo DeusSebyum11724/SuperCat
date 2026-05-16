@@ -18,13 +18,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 /**
- * Controleur de l'ecran d'authentification (cas d'utilisation UC1).
- *
- * Gere quatre modes affiches dans la meme carte :
- *  - connexion a un compte existant ;
- *  - creation d'un nouveau compte ;
- *  - verification du compte par code recu par e-mail ;
- *  - recuperation (reinitialisation) du mot de passe.
+ * Controleur de l'ecran d'authentification (cas d'utilisation UC1) :
+ * connexion, creation de compte, verification par e-mail et recuperation
+ * du mot de passe.
  */
 public class LoginController {
 
@@ -35,7 +31,6 @@ public class LoginController {
     private final VBox card;
     private Label message;
 
-    // compte en cours de verification par e-mail
     private String pendingUsername = "";
     private String pendingEmail = "";
 
@@ -43,7 +38,7 @@ public class LoginController {
         this.sceneManager = sceneManager;
         this.root = UIFactory.screen();
         this.card = UIFactory.card();
-        this.card.setMaxWidth(400);
+        this.card.setMaxWidth(394);
         this.card.setMaxHeight(Region.USE_PREF_SIZE);
         this.root.getChildren().add(card);
         showLoginForm();
@@ -53,7 +48,7 @@ public class LoginController {
         return root;
     }
 
-    // ===================== Mode CONNEXION =====================
+    // ===================== Connexion =====================
     private void showLoginForm() {
         TextField txtUser = UIFactory.textField("Pseudo");
         PasswordField txtPass = UIFactory.passwordField("Mot de passe");
@@ -66,24 +61,24 @@ public class LoginController {
 
         Button toRegister = UIFactory.linkButton("Creer un compte");
         toRegister.setOnAction(e -> showRegisterForm());
-        Button toRecover = UIFactory.linkButton("Mot de passe oublie ?");
+        Button toRecover = UIFactory.linkButton("Mot de passe oublie");
         toRecover.setOnAction(e -> showRecoverForm());
         HBox links = new HBox(18, toRegister, toRecover);
         links.setAlignment(Pos.CENTER);
 
-        Label hint = UIFactory.subtitle("Compte admin de demonstration :  admin  /  admin123");
-        hint.setStyle(hint.getStyle() + " -fx-font-size: 11px;");
+        Label hint = new Label("admin / admin123  pour l'espace administrateur");
+        hint.setStyle("-fx-font-size: 11px; -fx-text-fill: " + Theme.TEXT_MUTED + ";");
 
         VBox form = new VBox(12, txtUser, txtPass, message, btnLogin, links, hint);
-        rebuildCard("Bienvenue !", "Connecte-toi pour entrer dans le labyrinthe", form);
+        rebuildCard("Connexion", form);
     }
 
-    // ===================== Mode INSCRIPTION =====================
+    // ===================== Inscription =====================
     private void showRegisterForm() {
         TextField txtUser = UIFactory.textField("Pseudo (3 caracteres minimum)");
         TextField txtEmail = UIFactory.textField("Adresse e-mail");
         PasswordField txtPass = UIFactory.passwordField("Mot de passe (4 caracteres minimum)");
-        PasswordField txtConfirm = UIFactory.passwordField("Confirme le mot de passe");
+        PasswordField txtConfirm = UIFactory.passwordField("Confirmer le mot de passe");
         message = freshMessage();
 
         Button btnRegister = UIFactory.primaryButton("Creer le compte");
@@ -91,64 +86,67 @@ public class LoginController {
         btnRegister.setOnAction(e -> onRegister(txtUser.getText().trim(),
                 txtEmail.getText().trim(), txtPass.getText(), txtConfirm.getText()));
 
-        Button back = UIFactory.linkButton("Retour a la connexion");
+        Button back = UIFactory.linkButton("Retour");
         back.setOnAction(e -> showLoginForm());
 
         VBox form = new VBox(12, txtUser, txtEmail, txtPass, txtConfirm,
                 message, btnRegister, back);
-        rebuildCard("Creer un compte", "Une verification par e-mail sera demandee", form);
+        rebuildCard("Creer un compte", form);
     }
 
-    // ===================== Mode VERIFICATION =====================
+    // ===================== Verification =====================
     private void showVerifyForm() {
         TextField txtCode = UIFactory.textField("Code a 6 chiffres");
         message = freshMessage();
 
-        Label info = UIFactory.subtitle("Un code de verification a ete envoye a :\n" + pendingEmail);
+        Label info = new Label("Code envoye a\n" + pendingEmail);
         info.setWrapText(true);
-        info.setStyle(info.getStyle() + " -fx-font-size: 12px; -fx-text-alignment: center;");
+        info.setStyle("-fx-font-size: 12px; -fx-text-fill: " + Theme.TEXT_MUTED
+                + "; -fx-text-alignment: center;");
+        info.setMaxWidth(Double.MAX_VALUE);
+        info.setAlignment(Pos.CENTER);
 
-        Button btnVerify = UIFactory.primaryButton("Verifier mon compte");
+        Button btnVerify = UIFactory.primaryButton("Verifier");
         btnVerify.setMaxWidth(Double.MAX_VALUE);
         btnVerify.setOnAction(e -> onVerify(txtCode.getText().trim()));
         txtCode.setOnAction(e -> onVerify(txtCode.getText().trim()));
 
         Button resend = UIFactory.linkButton("Renvoyer le code");
         resend.setOnAction(e -> onResendCode());
-        Button back = UIFactory.linkButton("Retour a la connexion");
+        Button back = UIFactory.linkButton("Retour");
         back.setOnAction(e -> showLoginForm());
         HBox links = new HBox(18, resend, back);
         links.setAlignment(Pos.CENTER);
 
         VBox form = new VBox(12, info, txtCode, message, btnVerify, links);
-        rebuildCard("Verifie ton compte", "Active ton compte pour pouvoir jouer", form);
+        rebuildCard("Verification du compte", form);
     }
 
-    // ===================== Mode RECUPERATION =====================
+    // ===================== Recuperation =====================
     private void showRecoverForm() {
         TextField txtUser = UIFactory.textField("Pseudo");
         TextField txtEmail = UIFactory.textField("Adresse e-mail du compte");
         PasswordField txtPass = UIFactory.passwordField("Nouveau mot de passe");
-        PasswordField txtConfirm = UIFactory.passwordField("Confirme le nouveau mot de passe");
+        PasswordField txtConfirm = UIFactory.passwordField("Confirmer le mot de passe");
         message = freshMessage();
 
-        Button btnReset = UIFactory.primaryButton("Reinitialiser le mot de passe");
+        Button btnReset = UIFactory.primaryButton("Reinitialiser");
         btnReset.setMaxWidth(Double.MAX_VALUE);
         btnReset.setOnAction(e -> onRecover(txtUser.getText().trim(),
                 txtEmail.getText().trim(), txtPass.getText(), txtConfirm.getText()));
 
-        Button back = UIFactory.linkButton("Retour a la connexion");
+        Button back = UIFactory.linkButton("Retour");
         back.setOnAction(e -> showLoginForm());
 
         VBox form = new VBox(12, txtUser, txtEmail, txtPass, txtConfirm,
                 message, btnReset, back);
-        rebuildCard("Mot de passe oublie", "Verifie ton identite pour le reinitialiser", form);
+        rebuildCard("Mot de passe oublie", form);
     }
 
     // ===================== Actions =====================
     private void onLogin(String username, String password) {
         if (username.isEmpty() || password.isEmpty()) {
-            showErrorMessage("Veuillez remplir tous les champs.");
+            showErrorMessage("Renseigne tous les champs.");
             return;
         }
         User user = db.authenticate(username, password);
@@ -157,12 +155,10 @@ public class LoginController {
             return;
         }
         if (!user.isVerified()) {
-            // compte non verifie : on bascule sur l'ecran de verification
             pendingUsername = user.getUsername();
             pendingEmail = user.getEmail();
             showVerifyForm();
-            setMessage("Ton compte n'est pas encore verifie. Saisis le code "
-                    + "recu par e-mail ou demande un renvoi.", true);
+            setMessage("Compte non verifie. Saisis le code recu par e-mail.", true);
             return;
         }
         sceneManager.setCurrentUser(user);
@@ -175,7 +171,7 @@ public class LoginController {
 
     private void onRegister(String username, String email, String password, String confirm) {
         if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            showErrorMessage("Veuillez remplir tous les champs.");
+            showErrorMessage("Renseigne tous les champs.");
             return;
         }
         if (username.length() < 3) {
@@ -199,15 +195,13 @@ public class LoginController {
             showErrorMessage("Ce pseudo est deja utilise.");
             return;
         }
-        // compte cree (non verifie) : envoi du code de verification par e-mail
         pendingUsername = username;
         pendingEmail = email;
         showVerifyForm();
-        setMessage("Envoi du code de verification en cours...", false);
+        setMessage("Envoi du code en cours...", false);
         EmailService.sendVerificationCodeAsync(email, username, code,
-                () -> setMessage("Code de verification envoye a " + email, false),
-                err -> setMessage("Echec de l'envoi de l'e-mail. "
-                        + "Clique sur \"Renvoyer le code\".", true));
+                () -> setMessage("Code envoye a " + email, false),
+                err -> setMessage("Envoi impossible. Utilise \"Renvoyer le code\".", true));
     }
 
     private void onVerify(String code) {
@@ -217,9 +211,9 @@ public class LoginController {
         }
         if (db.verifyAccount(pendingUsername, code)) {
             showLoginForm();
-            setMessage("Compte verifie avec succes ! Tu peux te connecter.", false);
+            setMessage("Compte verifie. Connecte-toi.", false);
         } else {
-            showErrorMessage("Code incorrect. Verifie-le ou demande un renvoi.");
+            showErrorMessage("Code incorrect.");
         }
     }
 
@@ -229,15 +223,15 @@ public class LoginController {
             showErrorMessage("Compte introuvable.");
             return;
         }
-        setMessage("Envoi d'un nouveau code en cours...", false);
+        setMessage("Envoi d'un nouveau code...", false);
         EmailService.sendVerificationCodeAsync(pendingEmail, pendingUsername, code,
                 () -> setMessage("Nouveau code envoye a " + pendingEmail, false),
-                err -> setMessage("Echec de l'envoi de l'e-mail : " + err, true));
+                err -> setMessage("Envoi impossible : " + err, true));
     }
 
     private void onRecover(String username, String email, String password, String confirm) {
         if (username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            showErrorMessage("Veuillez remplir tous les champs.");
+            showErrorMessage("Renseigne tous les champs.");
             return;
         }
         if (password.length() < 4) {
@@ -254,16 +248,15 @@ public class LoginController {
         }
         db.resetPassword(username, password);
         showLoginForm();
-        setMessage("Mot de passe reinitialise ! Connecte-toi avec le nouveau.", false);
+        setMessage("Mot de passe reinitialise.", false);
     }
 
     // ===================== Utilitaires d'affichage =====================
-    private void rebuildCard(String headingText, String subtitleText, VBox form) {
+    private void rebuildCard(String headingText, VBox form) {
         form.setAlignment(Pos.CENTER);
         form.setFillWidth(true);
-        VBox header = new VBox(3, UIFactory.heading(headingText), UIFactory.subtitle(subtitleText));
-        header.setAlignment(Pos.CENTER);
-        card.getChildren().setAll(UIFactory.catFace(78), UIFactory.title("SuperCat"), header, form);
+        card.getChildren().setAll(UIFactory.catFace(66), UIFactory.heading(headingText), form);
+        UIFactory.fadeInUp(card, 40);
     }
 
     private Label freshMessage() {
