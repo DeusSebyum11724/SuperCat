@@ -1,6 +1,7 @@
 package com.supercat;
 
 import com.supercat.controller.AdminController;
+import com.supercat.controller.CampaignController;
 import com.supercat.controller.GameController;
 import com.supercat.controller.HomeController;
 import com.supercat.controller.LeaderboardController;
@@ -94,6 +95,12 @@ public class SceneManager {
     public void showHome() {
         clearKeyHandlers();
         setRoot(new HomeController(this).getView(), CALM_FRAME);
+    }
+
+    /** Affiche la ligne horizontale des niveaux de la campagne. */
+    public void showCampaign() {
+        clearKeyHandlers();
+        setRoot(new CampaignController(this).getView(), CALM_FRAME);
     }
 
     public void showCampaignLevel(int levelIndex) {

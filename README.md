@@ -39,7 +39,13 @@ Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
 - Création et modification du profil (e-mail, mot de passe).
 - Mots de passe **hachés avec BCrypt** — jamais stockés en clair (règle RM1).
 
-### Page d'accueil (sélection des niveaux)
+### Page d'accueil
+- **Scène animée** réunissant les trois chats de l'aventure : Nora la rousse,
+  Suie le noir aux yeux d'or et Givre le blanc et gris.
+- Trois portes d'entrée : le **mode Histoire**, **la Campagne** et le
+  **mode sans fin**.
+
+### La Campagne (sélection des niveaux)
 - Tous les niveaux affichés comme une **ligne de progression** (style Mini Metro).
 - **Difficulté** et **meilleur score** affichés pour chaque niveau.
 - Les niveaux terminés peuvent être **rejoués pour améliorer son score**.
@@ -48,9 +54,10 @@ Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
 
 ### Le jeu
 - **Trois modes** : le **mode Histoire** (l'aventure de Nora, une petite chatte
-  qui rassemble les poissons d'or pour garder une vieille maison au chaud
-  pendant l'hiver — 7 chapitres narratifs), une **campagne** de 12 niveaux, et
-  un **mode sans fin** généré à l'infini.
+  rousse qui traverse un pays enneigé pour rallumer le Grand Foyer du château —
+  9 chapitres présentés sur une **carte de voyage** avec chaumières, château et
+  étapes, en compagnie de Suie et Givre), une **campagne** de 12 niveaux, et un
+  **mode sans fin** généré à l'infini.
 - Affichage **plein écran** avec mise à l'échelle proportionnelle.
 - **Génération procédurale** : chaque niveau est un labyrinthe généré
   automatiquement (toujours résoluble), identique à chaque fois.
@@ -209,7 +216,7 @@ sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
 
 ## ✅ Tests unitaires
 
-28 tests répartis en 6 classes (`mvn test`) :
+29 tests répartis en 6 classes (`mvn test`) :
 
 | Classe de test | Vérifie |
 |----------------|---------|
