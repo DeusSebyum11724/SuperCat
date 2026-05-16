@@ -219,7 +219,12 @@ Base **SQLite**, deux tables :
 
 ## 🔁 Gestion du code avec Git
 
+Le projet est hébergé sur GitHub : **https://github.com/DeusSebyum11724/SuperCat**
+
 ```bash
+# Cloner le dépôt
+git clone https://github.com/DeusSebyum11724/SuperCat.git
+
 # Récupérer les dernières modifications depuis GitHub
 git pull origin main
 
