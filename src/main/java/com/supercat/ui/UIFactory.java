@@ -1,5 +1,6 @@
 package com.supercat.ui;
 
+import com.supercat.service.Settings;
 import javafx.animation.Animation;
 import javafx.animation.FadeTransition;
 import javafx.animation.Interpolator;
@@ -23,8 +24,9 @@ import javafx.util.Duration;
 /**
  * Fabrique de composants graphiques deja stylises.
  *
- * Le style s'inspire de "Monument Valley" (douceur, minimalisme, formes
- * arrondies) et de "Mini Metro" (badges geometriques epures).
+ * Charte calme et minimaliste : typographie sobre, boutons doux et
+ * tactiles, panneaux clairs, animations discretes. Centraliser la creation
+ * des composants garantit une interface coherente sur tous les ecrans.
  */
 public final class UIFactory {
 
@@ -35,19 +37,19 @@ public final class UIFactory {
     // ----- Libelles -----
     public static Label title(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-font-size: 36px; -fx-font-weight: 800; -fx-text-fill: " + Theme.TEXT_DARK + ";");
+        l.setStyle("-fx-font-size: 34px; -fx-font-weight: 700; -fx-text-fill: " + Theme.TEXT_DARK + ";");
         return l;
     }
 
     public static Label heading(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-font-size: 21px; -fx-font-weight: bold; -fx-text-fill: " + Theme.TEXT_DARK + ";");
+        l.setStyle("-fx-font-size: 20px; -fx-font-weight: 600; -fx-text-fill: " + Theme.TEXT_DARK + ";");
         return l;
     }
 
     public static Label subtitle(String text) {
         Label l = new Label(text);
-        l.setStyle("-fx-font-size: 14px; -fx-text-fill: " + Theme.TEXT_MUTED + ";");
+        l.setStyle("-fx-font-size: 13px; -fx-text-fill: " + Theme.TEXT_MUTED + ";");
         return l;
     }
 
@@ -60,62 +62,66 @@ public final class UIFactory {
     public static Label error(String text) {
         Label l = new Label(text);
         l.setWrapText(true);
-        l.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: " + Theme.DANGER + ";");
+        l.setStyle("-fx-font-size: 13px; -fx-font-weight: 600; -fx-text-fill: " + Theme.DANGER + ";");
         return l;
     }
 
-    /** Petit badge arrondi (etiquette de difficulte, statut...). */
+    /** Petite etiquette arrondie (difficulte, statut...). */
     public static Label tag(String text, String backgroundColor, String textColor) {
         Label l = new Label(text);
         l.setStyle("-fx-background-color: " + backgroundColor + "; -fx-text-fill: " + textColor + "; "
-                + "-fx-background-radius: 11; -fx-padding: 3 12 3 12; "
-                + "-fx-font-size: 11px; -fx-font-weight: bold;");
+                + "-fx-background-radius: 10; -fx-padding: 3 11 3 11; "
+                + "-fx-font-size: 11px; -fx-font-weight: 600;");
         return l;
     }
 
-    // ----- Boutons (forme arrondie "pilule") -----
+    // ----- Boutons (doux, tactiles) -----
     public static Button primaryButton(String text) {
-        return pill(text, Theme.ACCENT, Theme.ACCENT_DARK, "white");
+        return pill(text, Theme.ACCENT, "#E69D81", "white");
     }
 
     public static Button secondaryButton(String text) {
-        return pill(text, "#EBE4D9", "#DDD4C5", Theme.TEXT_DARK);
+        return pill(text, "#ECE5D9", "#F3EEE4", Theme.TEXT_DARK);
     }
 
     public static Button dangerButton(String text) {
-        return pill(text, Theme.DANGER, "#B5685B", "white");
+        return pill(text, Theme.DANGER, "#E29E80", "white");
     }
 
     public static Button successButton(String text) {
-        return pill(text, Theme.SUCCESS, "#688F7D", "white");
+        return pill(text, Theme.SUCCESS, "#99B79C", "white");
     }
 
-    private static Button pill(String text, String bg, String bgHover, String fg) {
+    private static Button pill(String text, String background, String backgroundHover, String foreground) {
         Button b = new Button(text);
-        String shape = "-fx-background-radius: 24; -fx-cursor: hand; -fx-font-size: 15px; "
-                + "-fx-font-weight: bold; -fx-padding: 12 26 12 26; -fx-text-fill: " + fg + ";";
-        b.setStyle("-fx-background-color: " + bg + ";" + shape);
+        String shape = "-fx-background-radius: 21; -fx-cursor: hand; -fx-font-size: 14px; "
+                + "-fx-font-weight: 600; -fx-padding: 11 24 11 24; -fx-text-fill: " + foreground + ";";
+        String idle = "-fx-background-color: " + background + ";" + shape;
+        String hovered = "-fx-background-color: " + backgroundHover + ";" + shape
+                + "-fx-effect: dropshadow(gaussian, rgba(63,59,66,0.18), 12, 0, 0, 3);";
+        b.setStyle(idle);
+        // survol / pression : mise a l'echelle douce (1.02 / 0.97)
         b.setOnMouseEntered(e -> {
-            b.setStyle("-fx-background-color: " + bgHover + ";" + shape);
-            b.setScaleX(1.03);
-            b.setScaleY(1.03);
+            b.setStyle(hovered);
+            scaleTo(b, 1.02, 150);
         });
         b.setOnMouseExited(e -> {
-            b.setStyle("-fx-background-color: " + bg + ";" + shape);
-            b.setScaleX(1.0);
-            b.setScaleY(1.0);
+            b.setStyle(idle);
+            scaleTo(b, 1.0, 170);
         });
+        b.setOnMousePressed(e -> scaleTo(b, 0.97, 90));
+        b.setOnMouseReleased(e -> scaleTo(b, b.isHover() ? 1.02 : 1.0, 150));
         return b;
     }
 
-    /** Bouton plat ressemblant a un lien hypertexte. */
+    /** Bouton plat, discret, ressemblant a un lien. */
     public static Button linkButton(String text) {
         Button b = new Button(text);
-        String base = "-fx-background-color: transparent; -fx-cursor: hand; -fx-underline: true; "
-                + "-fx-font-size: 13px; -fx-padding: 4; -fx-text-fill: ";
-        b.setStyle(base + Theme.ACCENT + ";");
-        b.setOnMouseEntered(e -> b.setStyle(base + Theme.ACCENT_DARK + ";"));
-        b.setOnMouseExited(e -> b.setStyle(base + Theme.ACCENT + ";"));
+        String base = "-fx-background-color: transparent; -fx-cursor: hand; "
+                + "-fx-font-size: 13px; -fx-padding: 4 6 4 6; -fx-text-fill: ";
+        b.setStyle(base + Theme.TEXT_MUTED + ";");
+        b.setOnMouseEntered(e -> b.setStyle(base + Theme.ACCENT + ";"));
+        b.setOnMouseExited(e -> b.setStyle(base + Theme.TEXT_MUTED + ";"));
         return b;
     }
 
@@ -135,15 +141,15 @@ public final class UIFactory {
     }
 
     private static void styleField(TextField field) {
-        field.setStyle("-fx-background-radius: 13; -fx-border-radius: 13; -fx-font-size: 14px; "
-                + "-fx-padding: 11; -fx-border-color: #DDD3C4; -fx-border-width: 1.5; "
-                + "-fx-background-color: #F3EDE2;");
+        field.setStyle("-fx-background-radius: 12; -fx-border-radius: 12; -fx-font-size: 14px; "
+                + "-fx-padding: 11; -fx-border-color: #E1D9CA; -fx-border-width: 1.4; "
+                + "-fx-background-color: #F4EFE6; -fx-prompt-text-fill: #B0AA9E;");
         field.setPrefHeight(44);
     }
 
     // ----- Conteneurs -----
 
-    /** Carte creme arrondie avec une ombre douce. */
+    /** Panneau creme arrondi, ombre douce. */
     public static VBox card() {
         VBox v = new VBox(14);
         v.setStyle(Theme.CARD_STYLE);
@@ -152,12 +158,68 @@ public final class UIFactory {
         return v;
     }
 
-    /** Conteneur racine d'un ecran : fond degrade serein plein cadre. */
+    /** Conteneur racine d'un ecran (taille de conception fixe : 860 x 660). */
     public static StackPane screen() {
         StackPane root = new StackPane();
         root.setStyle(Theme.BG_GRADIENT);
+        root.setMinSize(Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
         root.setPrefSize(Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
+        root.setMaxSize(Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
         return root;
+    }
+
+    // ----- Animations -----
+
+    /** Apparition d'un element : fondu, leger glissement et mise a l'echelle. */
+    public static void fadeInUp(Node node, double delayMillis) {
+        if (Settings.isReducedMotion()) {
+            node.setOpacity(1);
+            node.setTranslateY(0);
+            return;
+        }
+        node.setOpacity(0);
+        node.setTranslateY(14);
+        node.setScaleX(0.985);
+        node.setScaleY(0.985);
+        FadeTransition fade = new FadeTransition(Duration.millis(380), node);
+        fade.setFromValue(0);
+        fade.setToValue(1);
+        TranslateTransition slide = new TranslateTransition(Duration.millis(380), node);
+        slide.setFromY(14);
+        slide.setToY(0);
+        ScaleTransition scale = new ScaleTransition(Duration.millis(380), node);
+        scale.setFromX(0.985);
+        scale.setFromY(0.985);
+        scale.setToX(1.0);
+        scale.setToY(1.0);
+        ParallelTransition animation = new ParallelTransition(fade, slide, scale);
+        animation.setDelay(Duration.millis(delayMillis));
+        animation.setInterpolator(Interpolator.EASE_OUT);
+        animation.play();
+    }
+
+    /** Respiration continue : battement d'echelle tres discret. */
+    public static void breathe(Node node, double maxScale, double durationMillis) {
+        if (Settings.isReducedMotion()) {
+            return;
+        }
+        ScaleTransition pulse = new ScaleTransition(Duration.millis(durationMillis), node);
+        pulse.setFromX(1);
+        pulse.setFromY(1);
+        pulse.setToX(maxScale);
+        pulse.setToY(maxScale);
+        pulse.setAutoReverse(true);
+        pulse.setCycleCount(Animation.INDEFINITE);
+        pulse.setInterpolator(Interpolator.EASE_BOTH);
+        pulse.play();
+    }
+
+    private static void scaleTo(Node node, double target, double millis) {
+        ScaleTransition st = new ScaleTransition(Duration.millis(millis), node);
+        st.setToX(target);
+        st.setToY(target);
+        st.setInterpolator(Interpolator.EASE_OUT);
+        st.play();
     }
 
     /** Petit visage de chat dessine (mascotte de l'application). */
@@ -202,36 +264,5 @@ public final class UIFactory {
         g.strokeLine(cx + r * 0.25, cy + r * 0.28, cx + r * 1.2, cy + r * 0.08);
         g.strokeLine(cx + r * 0.25, cy + r * 0.4, cx + r * 1.2, cy + r * 0.45);
         return canvas;
-    }
-
-    // ----- Animations -----
-
-    /** Anime l'apparition d'un noeud : fondu accompagne d'un leger glissement. */
-    public static void fadeInUp(Node node, double delayMillis) {
-        node.setOpacity(0);
-        node.setTranslateY(18);
-        FadeTransition fade = new FadeTransition(Duration.millis(460), node);
-        fade.setFromValue(0);
-        fade.setToValue(1);
-        TranslateTransition slide = new TranslateTransition(Duration.millis(460), node);
-        slide.setFromY(18);
-        slide.setToY(0);
-        ParallelTransition animation = new ParallelTransition(fade, slide);
-        animation.setDelay(Duration.millis(delayMillis));
-        animation.setInterpolator(Interpolator.EASE_OUT);
-        animation.play();
-    }
-
-    /** Anime un noeud en respiration continue (battement d'echelle discret). */
-    public static void breathe(Node node, double maxScale, double durationMillis) {
-        ScaleTransition pulse = new ScaleTransition(Duration.millis(durationMillis), node);
-        pulse.setFromX(1);
-        pulse.setFromY(1);
-        pulse.setToX(maxScale);
-        pulse.setToY(maxScale);
-        pulse.setAutoReverse(true);
-        pulse.setCycleCount(Animation.INDEFINITE);
-        pulse.setInterpolator(Interpolator.EASE_BOTH);
-        pulse.play();
     }
 }

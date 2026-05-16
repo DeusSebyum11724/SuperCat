@@ -105,9 +105,11 @@ public class HomeController {
         profile.setOnAction(e -> sceneManager.showProfile());
         Button leaderboard = UIFactory.secondaryButton("Classement");
         leaderboard.setOnAction(e -> sceneManager.showLeaderboard());
+        Button settings = UIFactory.secondaryButton("Parametres");
+        settings.setOnAction(e -> sceneManager.showSettings());
         Button logout = UIFactory.secondaryButton("Deconnexion");
         logout.setOnAction(e -> sceneManager.logout());
-        HBox footer = new HBox(10, profile, leaderboard, logout);
+        HBox footer = new HBox(9, profile, leaderboard, settings, logout);
         footer.setAlignment(Pos.CENTER);
 
         card.getChildren().setAll(header, stats, scroll, footer);

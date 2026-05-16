@@ -53,6 +53,9 @@ public class AdminController {
     public Parent getView() {
         BorderPane root = new BorderPane();
         root.setStyle(Theme.BG_GRADIENT);
+        root.setMinSize(Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
+        root.setPrefSize(Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
+        root.setMaxSize(Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
         root.setTop(buildHeader());
 
         HBox center = new HBox(16, buildUserPanel(), buildStatsPanel());
@@ -66,10 +69,10 @@ public class AdminController {
     // ----- En-tete -----
     private HBox buildHeader() {
         User admin = sceneManager.getCurrentUser();
-        Label title = new Label("Espace Administrateur");
-        title.setStyle("-fx-font-size: 23px; -fx-font-weight: bold; -fx-text-fill: white;");
-        Label who = new Label("Connecte en tant que : " + (admin != null ? admin.getUsername() : ""));
-        who.setStyle("-fx-text-fill: #B5C1CC; -fx-font-size: 13px;");
+        Label title = new Label("Espace administrateur");
+        title.setStyle("-fx-font-size: 22px; -fx-font-weight: 600; -fx-text-fill: " + Theme.TEXT_DARK + ";");
+        Label who = new Label("Connecte : " + (admin != null ? admin.getUsername() : ""));
+        who.setStyle("-fx-text-fill: " + Theme.TEXT_MUTED + "; -fx-font-size: 13px;");
         VBox titleBox = new VBox(2, title, who);
 
         Region spacer = new Region();
@@ -80,7 +83,8 @@ public class AdminController {
         HBox header = new HBox(14, titleBox, spacer, logout);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(16, 20, 16, 20));
-        header.setStyle("-fx-background-color: #243140;");
+        header.setStyle("-fx-background-color: rgba(252,250,245,0.96); "
+                + "-fx-effect: dropshadow(gaussian, rgba(63,59,66,0.10), 9, 0, 0, 3);");
         return header;
     }
 
