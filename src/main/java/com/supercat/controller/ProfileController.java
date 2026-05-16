@@ -48,7 +48,7 @@ public class ProfileController {
         VBox infoBox = new VBox(5,
                 infoLine("Pseudo", user.getUsername()),
                 infoLine("Role", user.getRole()),
-                infoLine("Meilleur score", user.getHighScore() + " points"));
+                infoLine("Score total", user.getHighScore() + " points"));
         infoBox.setStyle("-fx-background-color: #FFF4E2; -fx-background-radius: 12; -fx-padding: 14;");
 
         // --- modification de l'adresse e-mail ---
@@ -71,9 +71,9 @@ public class ProfileController {
                 currentPw, newPw, confirmPw, changePw);
         pwSection.setFillWidth(true);
 
-        Button back = UIFactory.secondaryButton("Retour au menu");
+        Button back = UIFactory.secondaryButton("Retour a l'accueil");
         back.setMaxWidth(Double.MAX_VALUE);
-        back.setOnAction(e -> sceneManager.showMenu());
+        back.setOnAction(e -> sceneManager.showHome());
 
         VBox content = new VBox(14, infoBox, emailSection, pwSection, message, back);
         content.setFillWidth(true);

@@ -169,7 +169,7 @@ public class LoginController {
         if (user.isAdmin()) {
             sceneManager.showAdmin();
         } else {
-            sceneManager.showMenu();
+            sceneManager.showHome();
         }
     }
 

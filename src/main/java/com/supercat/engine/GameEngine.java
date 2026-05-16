@@ -20,16 +20,10 @@ import java.util.Set;
 /**
  * Moteur du jeu SuperCat : coeur de l'application.
  *
- * Il pilote la boucle de jeu (frame par frame, ~60 images/seconde) :
- *  - lecture du clavier et deplacement du chat ;
- *  - deplacement autonome des chiens ;
- *  - detection des collisions (poissons, bonus, chiens, sortie) ;
- *  - gestion du chronometre et du score ;
- *  - rendu de la scene sur le canvas.
- *
- * Conforme au diagramme de classes : possede un AnimationTimer, un score,
- * un temps restant, un etat de jeu, et expose start(), stop(),
- * checkCollisions() et updateGameLogic().
+ * Il joue un niveau a la fois (campagne ou mode sans fin) et pilote la
+ * boucle de jeu frame par frame : lecture du clavier et deplacement du chat,
+ * deplacement autonome des chiens, detection des collisions, chronometre,
+ * score et rendu sur le canvas.
  */
 public class GameEngine {
 
@@ -72,18 +66,17 @@ public class GameEngine {
     }
 
     // =====================================================================
-    //  Cycle de vie de la partie
+    //  Cycle de vie d'un niveau
     // =====================================================================
 
-    /** Demarre une nouvelle partie complete depuis le niveau 1. */
-    public void startNewGame() {
-        levelIndex = 0;
+    /** Charge et demarre le niveau d'indice donne (score remis a zero). */
+    public void playLevel(int index) {
+        levelIndex = index;
         score = 0;
-        loadLevel(0);
+        loadLevel(index);
         state = GameState.PLAYING;
     }
 
-    /** Charge un niveau et reinitialise les compteurs associes. */
     private void loadLevel(int index) {
         level = LevelLoader.load(index);
         cat = level.getCat();
@@ -100,26 +93,17 @@ public class GameEngine {
         secondAccumulator = 0;
     }
 
-    /** Demarre la boucle d'animation. */
     public void start() {
         timer.start();
     }
 
-    /** Arrete la boucle d'animation (quand on quitte l'ecran de jeu). */
     public void stop() {
         timer.stop();
     }
 
-    /** Passe au niveau suivant en conservant le score acquis. */
-    public void nextLevel() {
-        levelIndex++;
-        loadLevel(levelIndex);
-        state = GameState.PLAYING;
-    }
-
-    /** Recommence toute la partie apres un Game Over ou une victoire. */
+    /** Rejoue le niveau courant depuis le debut. */
     public void restart() {
-        startNewGame();
+        playLevel(levelIndex);
     }
 
     public void pause() {
@@ -152,7 +136,6 @@ public class GameEngine {
         listener.onTick();
     }
 
-    /** Met a jour le compte a rebours. Le temps ecoule provoque un Game Over. */
     private void updateTimer(long now) {
         if (lastNano == 0) {
             lastNano = now;
@@ -161,7 +144,7 @@ public class GameEngine {
         double dt = (now - lastNano) / 1_000_000_000.0;
         lastNano = now;
         if (dt > 0.25) {
-            dt = 0.25;   // limite les sauts (lag ou reprise apres une pause)
+            dt = 0.25;
         }
         secondAccumulator += dt;
         while (secondAccumulator >= 1.0) {
@@ -175,10 +158,6 @@ public class GameEngine {
         }
     }
 
-    /**
-     * Met a jour la logique du jeu : deplacement du chat selon le clavier,
-     * deplacement autonome des chiens, animations des objets.
-     */
     public void updateGameLogic() {
         // --- deplacement du chat selon les touches enfoncees ---
         // Fleches + WASD (clavier QWERTY) + ZQSD (clavier AZERTY)
@@ -198,9 +177,7 @@ public class GameEngine {
             cat.moveDown();
         }
 
-        // deplacement axe par axe : en cas de collision avec un mur on annule
-        // seulement l'axe concerne, ce qui permet au chat de glisser le long
-        // des murs.
+        // deplacement axe par axe : annulation du seul axe en collision
         double oldX = cat.getX();
         cat.setX(cat.getX() + cat.getVx());
         if (hitsWall(cat)) {
@@ -213,7 +190,7 @@ public class GameEngine {
         }
         cat.update();
 
-        // --- deplacement autonome des chiens (IA de patrouille) ---
+        // --- deplacement autonome des chiens ---
         for (Dog dog : dogs) {
             double dx = dog.getX();
             double dy = dog.getY();
@@ -225,7 +202,7 @@ public class GameEngine {
             }
         }
 
-        // --- animations des objets ---
+        // --- animations ---
         for (Fish f : fishList) {
             if (!f.isCollected()) {
                 f.update();
@@ -247,10 +224,6 @@ public class GameEngine {
         return CollisionManager.collidesAny(obj, walls);
     }
 
-    /**
-     * Verifie toutes les collisions du chat : poissons collectes, bonus
-     * ramasses, collision mortelle avec un chien (RM9), sortie atteinte.
-     */
     public void checkCollisions() {
         // poissons d'or : +100 points chacun (RM3)
         for (Fish f : fishList) {
@@ -260,11 +233,10 @@ public class GameEngine {
                 fishCollected++;
                 effects.add(new FloatingText(f.getCenterX(), f.getY(), "+100", Theme.FISH_DARK));
                 if (fishCollected >= fishTotal) {
-                    exit.unlock();   // tous les poissons collectes : sortie ouverte (RM2)
+                    exit.unlock();
                 }
             }
         }
-
         // objets bonus speciaux
         for (Bonus b : bonuses) {
             if (!b.isCollected() && CollisionManager.collide(cat, b)) {
@@ -280,7 +252,6 @@ public class GameEngine {
                 }
             }
         }
-
         // collision avec un chien : Game Over immediat (RM9)
         for (Dog dog : dogs) {
             if (CollisionManager.collide(cat, dog)) {
@@ -288,7 +259,6 @@ public class GameEngine {
                 return;
             }
         }
-
         // sortie atteinte (uniquement si elle est deverrouillee)
         if (!exit.isLocked() && CollisionManager.collide(cat, exit)) {
             triggerLevelComplete();
@@ -296,14 +266,9 @@ public class GameEngine {
     }
 
     private void triggerLevelComplete() {
-        score += timeLeft * 5;   // bonus de temps pour avoir fini en avance (RM3)
-        if (levelIndex >= LevelLoader.getLevelCount() - 1) {
-            state = GameState.GAME_WON;
-            listener.onGameWon();
-        } else {
-            state = GameState.LEVEL_COMPLETE;
-            listener.onLevelComplete();
-        }
+        score += timeLeft * 5;   // bonus de temps (RM3)
+        state = GameState.LEVEL_COMPLETE;
+        listener.onLevelComplete();
     }
 
     private void triggerGameOver() {
@@ -315,7 +280,6 @@ public class GameEngine {
     //  Rendu graphique
     // =====================================================================
     public void render() {
-        // sol en damier (deux teintes proches)
         for (int r = 0; r < Theme.ROWS; r++) {
             for (int c = 0; c < Theme.COLS; c++) {
                 gc.setFill((r + c) % 2 == 0 ? Theme.FLOOR : Theme.FLOOR_ALT);
@@ -339,8 +303,6 @@ public class GameEngine {
         for (FloatingText ft : effects) {
             ft.render(gc);
         }
-
-        // assombrissement de l'ecran en pause
         if (state == GameState.PAUSED) {
             gc.setFill(Color.rgb(0, 0, 0, 0.45));
             gc.fillRect(0, 0, Theme.CANVAS_WIDTH, Theme.CANVAS_HEIGHT);
@@ -353,10 +315,10 @@ public class GameEngine {
     public GameState getState() { return state; }
     public int getScore() { return score; }
     public int getTimeLeft() { return timeLeft; }
-    public int getLevelNumber() { return levelIndex + 1; }
-    public int getTotalLevels() { return LevelLoader.getLevelCount(); }
+    public int getLevelIndex() { return levelIndex; }
     public String getLevelName() { return level != null ? level.getName() : ""; }
+    public String getLevelDifficulty() { return level != null ? level.getDifficultyLabel() : ""; }
+    public int getDogCount() { return dogs != null ? dogs.size() : 0; }
     public int getFishCollected() { return fishCollected; }
     public int getFishTotal() { return fishTotal; }
-    public boolean isExitOpen() { return exit != null && !exit.isLocked(); }
 }

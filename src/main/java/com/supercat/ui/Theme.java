@@ -3,9 +3,11 @@ package com.supercat.ui;
 import javafx.scene.paint.Color;
 
 /**
- * Constantes visuelles centralisees du jeu SuperCat : dimensions de la
- * grille du labyrinthe, couleurs de l'interface et couleurs des objets
- * animes. Regrouper ces valeurs ici garantit une charte graphique coherente.
+ * Constantes visuelles centralisees du jeu SuperCat.
+ *
+ * La charte graphique s'inspire de l'esthetique des jeux "Monument Valley"
+ * (degrades pastel, douceur, minimalisme) et "Mini Metro" (formes
+ * geometriques epurees) pour l'interface utilisateur.
  */
 public final class Theme {
 
@@ -14,22 +16,31 @@ public final class Theme {
     }
 
     // ----- Fenetre / scenes -----
-    public static final double SCENE_WIDTH = 820;
-    public static final double SCENE_HEIGHT = 640;
+    public static final double SCENE_WIDTH = 860;
+    public static final double SCENE_HEIGHT = 660;
 
-    // ----- Styles interface (CSS en ligne) -----
+    // ----- Interface : degrade de fond serein (lavande -> rose -> peche) -----
     public static final String BG_GRADIENT =
-            "-fx-background-color: linear-gradient(to bottom right, #2C3E50, #46637E);";
-    public static final String CARD_STYLE =
-            "-fx-background-color: white; -fx-background-radius: 18; "
-            + "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 22, 0.2, 0, 8);";
+            "-fx-background-color: linear-gradient(to bottom, "
+            + "#B7A6CE 0%, #D6B7C2 55%, #F0CDB6 100%);";
 
-    public static final String ACCENT = "#E8821E";       // orange (couleur du chat)
-    public static final String ACCENT_DARK = "#C76A12";
-    public static final String SUCCESS = "#27AE60";
-    public static final String DANGER = "#C0392B";
-    public static final String TEXT_DARK = "#2C3E50";
-    public static final String TEXT_MUTED = "#8A98A5";
+    // ----- Carte (panneau) : creme doux, coins tres arrondis, ombre legere -----
+    public static final String CARD_STYLE =
+            "-fx-background-color: #FBF7F0; -fx-background-radius: 24; "
+            + "-fx-effect: dropshadow(gaussian, rgba(74,68,88,0.22), 26, 0.12, 0, 10);";
+
+    // ----- Couleurs de l'interface -----
+    public static final String ACCENT = "#E08A6F";        // corail doux
+    public static final String ACCENT_DARK = "#CC7159";
+    public static final String SECONDARY = "#7E9DB6";     // bleu poudre
+    public static final String SECONDARY_DARK = "#6A8AA3";
+    public static final String SUCCESS = "#7BA793";       // sauge douce
+    public static final String DANGER = "#C97A6D";        // terracotta sombre
+    public static final String GOLD = "#E0B25C";          // ambre doux
+    public static final String LOCKED = "#BCB4C8";        // gris lavande (verrouille)
+    public static final String TEXT_DARK = "#4A4458";     // prune sombre
+    public static final String TEXT_MUTED = "#9A93A8";    // lavande grisee
+    public static final String HUD_BG = "#3E3852";        // prune profond (bandeau de jeu)
 
     // ----- Grille du labyrinthe -----
     public static final double TILE = 40;
@@ -38,12 +49,12 @@ public final class Theme {
     public static final double CANVAS_WIDTH = TILE * COLS;    // 760
     public static final double CANVAS_HEIGHT = TILE * ROWS;   // 520
 
-    // ----- Couleurs du sol et des murs -----
-    public static final Color FLOOR = Color.web("#FBE9D0");
-    public static final Color FLOOR_ALT = Color.web("#F3DBBC");
-    public static final Color WALL = Color.web("#3A5068");
-    public static final Color WALL_LIGHT = Color.web("#54718F");
-    public static final Color WALL_DARK = Color.web("#27374A");
+    // ----- Couleurs du sol et des murs (teintes douces, harmonisees) -----
+    public static final Color FLOOR = Color.web("#EFE6D6");
+    public static final Color FLOOR_ALT = Color.web("#E7DBC6");
+    public static final Color WALL = Color.web("#8C7CA6");
+    public static final Color WALL_LIGHT = Color.web("#A596BC");
+    public static final Color WALL_DARK = Color.web("#6E6088");
 
     // ----- Couleurs du chat (joueur) -----
     public static final Color CAT_BODY = Color.web("#F4A340");
@@ -58,13 +69,13 @@ public final class Theme {
 
     // ----- Couleurs des poissons d'or -----
     public static final Color FISH_BODY = Color.web("#FFD23F");
-    public static final Color FISH_DARK = Color.web("#FF9F1C");
+    public static final Color FISH_DARK = Color.web("#F0A018");
 
     // ----- Couleurs de la sortie -----
-    public static final Color EXIT_LOCKED = Color.web("#C0392B");
-    public static final Color EXIT_OPEN = Color.web("#27AE60");
+    public static final Color EXIT_LOCKED = Color.web("#C97A6D");
+    public static final Color EXIT_OPEN = Color.web("#7BA793");
 
     // ----- Couleurs des bonus -----
-    public static final Color BONUS_STAR = Color.web("#9B59B6");
-    public static final Color BONUS_CLOCK = Color.web("#2E86DE");
+    public static final Color BONUS_STAR = Color.web("#9C6FB0");
+    public static final Color BONUS_CLOCK = Color.web("#6E9BC4");
 }

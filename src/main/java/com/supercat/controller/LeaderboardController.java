@@ -68,9 +68,9 @@ public class LeaderboardController {
         scroll.setPrefHeight(350);
         scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
 
-        Button back = UIFactory.secondaryButton("Retour au menu");
+        Button back = UIFactory.secondaryButton("Retour a l'accueil");
         back.setMaxWidth(Double.MAX_VALUE);
-        back.setOnAction(e -> sceneManager.showMenu());
+        back.setOnAction(e -> sceneManager.showHome());
 
         VBox content = new VBox(14, header, scroll, back);
         content.setFillWidth(true);

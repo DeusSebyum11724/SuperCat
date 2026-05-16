@@ -20,10 +20,12 @@ incarne un chat qui doit parcourir des labyrinthes en 2D : il attrape des
 **poissons d'or** (à la place des traditionnelles pièces), évite des **chiens**
 (les ennemis) et doit atteindre la **sortie** avant la fin du chronomètre.
 
-Le projet couvre l'ensemble du cycle : authentification multi-rôles avec
-**vérification par e-mail**, persistance dans une base **MongoDB**, moteur de
-jeu temps réel, détection de collisions, gestion du score et espace
-d'administration.
+L'interface s'inspire de l'esthétique épurée des jeux **Monument Valley**
+(douceur, dégradés pastel) et **Mini Metro** (page d'accueil présentant les
+niveaux comme une ligne de stations).
+
+Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
+**mode sans fin** qui génère des salles à l'infini pour les joueurs aguerris.
 
 ---
 
@@ -37,41 +39,42 @@ d'administration.
 - Création et modification du profil (e-mail, mot de passe).
 - Mots de passe **hachés avec BCrypt** — jamais stockés en clair (règle RM1).
 
-### Pour le joueur
-- Démarrer une nouvelle partie et contrôler le chat au clavier.
-- Interagir avec des éléments animés (poissons, bonus, chiens, sortie).
-- Collecter des points, éviter les obstacles, atteindre l'objectif.
-- Visualiser en temps réel le score et l'état de la partie (HUD).
-- Sauvegarder automatiquement son meilleur score (à chaque niveau réussi).
-- Consulter le **classement mondial** (leaderboard).
-
-### Pour l'administrateur
-- Consulter et **rechercher** tous les comptes.
-- **Supprimer** un compte joueur (les comptes admin sont protégés).
-- **Réinitialiser** les scores d'un joueur.
-- Consulter les **statistiques** de la plateforme.
+### Page d'accueil (sélection des niveaux)
+- Tous les niveaux affichés comme une **ligne de progression** (style Mini Metro).
+- **Difficulté** et **meilleur score** affichés pour chaque niveau.
+- Les niveaux terminés peuvent être **rejoués pour améliorer son score**.
+- Déverrouillage progressif : un niveau s'ouvre quand le précédent est terminé.
+- Statistiques globales : niveaux terminés, score total, record du mode sans fin.
 
 ### Le jeu
-- **Musique d'ambiance** (synthétisée par le programme) avec bouton activer/désactiver.
+- **12 niveaux** de campagne + un **mode sans fin** (génération infinie).
+- **Génération procédurale** : chaque niveau est un labyrinthe généré
+  automatiquement (toujours résoluble), identique à chaque fois.
+- **Musique d'ambiance** synthétisée + bouton activer/désactiver.
 - **Animations** : démarche du chat, patrouille des chiens, flottement des
-  poissons, pulsation des bonus, transitions en fondu entre les écrans.
-- **3 niveaux** (labyrinthes) de difficulté croissante.
-- **Détection de collisions** précise (chat / murs / chiens / poissons / sortie).
-- **Calcul du score** : 100 points par poisson + bonus de temps + objets bonus.
-- Mécanisme de **fin de partie et de redémarrage** (Game Over / Victoire / Rejouer).
+  poissons, pulsation des bonus, transitions en fondu.
+- HUD affichant **la difficulté du niveau** et les autres statistiques utiles
+  (score, poissons, temps).
+- **Détection de collisions**, calcul du score, fin de partie et redémarrage.
+
+### Pour l'administrateur
+- Consulter, **rechercher**, **supprimer** des comptes joueurs.
+- **Réinitialiser** les scores d'un joueur.
+- Consulter les **statistiques** de la plateforme.
 
 ---
 
 ## 🅰️ Projet de Type A — fonctionnalités avancées
 
-Le projet implémente **4 fonctionnalités avancées** (2 suffisent pour le Type A) :
+Le projet implémente largement les critères de Type A (2 suffisent) :
 
 | # | Fonctionnalité avancée | Mise en œuvre |
 |---|------------------------|---------------|
-| 1 | **Plusieurs niveaux** | 3 labyrinthes distincts (`LevelLoader`), difficulté progressive. |
-| 2 | **Ennemis à mouvement autonome** | Les chiens patrouillent seuls et font demi-tour aux murs (`Dog`). |
-| 3 | **Objets bonus / spéciaux** | Étoile (+250 points) et horloge (+10 secondes) (`Bonus`). |
-| 4 | **Animations et transitions avancées** | Sprites animés, retours visuels « +100 », transitions en fondu. |
+| 1 | **Plusieurs niveaux** | 12 niveaux de campagne, difficulté progressive. |
+| 2 | **Génération procédurale + mode sans fin** | Niveaux générés à l'infini (`LevelLoader`). |
+| 3 | **Ennemis à mouvement autonome** | Les chiens patrouillent seuls et font demi-tour aux murs. |
+| 4 | **Objets bonus / spéciaux** | Étoile (+250 points) et horloge (+10 secondes). |
+| 5 | **Animations et transitions avancées** | Sprites animés, retours visuels, transitions en fondu. |
 
 ---
 
@@ -95,10 +98,7 @@ Le projet implémente **4 fonctionnalités avancées** (2 suffisent pour le Type
 - **JDK 21 ou supérieur** (développé et testé avec le JDK 25).
 - **Apache Maven 3.9+**.
 - Un accès à une base **MongoDB** (par exemple MongoDB Atlas).
-- Un compte **Gmail** avec un *mot de passe d'application* (pour l'envoi des
-  e-mails de vérification).
-
-Maven télécharge automatiquement toutes les bibliothèques nécessaires.
+- Un compte **Gmail** avec un *mot de passe d'application* (e-mails de vérification).
 
 ---
 
@@ -122,27 +122,19 @@ L'application a besoin des identifiants MongoDB et Gmail. Ceux-ci ne sont
 > Vous pouvez aussi définir les variables d'environnement
 > `MONGODB_URI_CATALOG`, `GMAIL_USER` et `GMAIL_APP_PASSWORD`.
 
-> ℹ️ Sur MongoDB Atlas, pensez à autoriser votre adresse IP dans
-> **Network Access** pour que l'application puisse se connecter.
+> ℹ️ Sur MongoDB Atlas, autorisez votre adresse IP dans **Network Access**.
 
 ---
 
 ## 🚀 Compilation et lancement
 
 ```bash
-# Compiler le projet
-mvn compile
-
-# Lancer le jeu
-mvn javafx:run
-
-# Exécuter les tests unitaires
-mvn test
+mvn compile      # compiler le projet
+mvn javafx:run   # lancer le jeu
+mvn test         # exécuter les tests unitaires
 ```
 
 ### Compte administrateur de démonstration
-
-Un compte administrateur est créé automatiquement au premier démarrage :
 
 | Pseudo | Mot de passe |
 |--------|--------------|
@@ -154,21 +146,21 @@ Un compte administrateur est créé automatiquement au premier démarrage :
 
 1. **Crée un compte** : un code de vérification est envoyé à ton adresse e-mail.
 2. Saisis ce **code** pour activer ton compte, puis connecte-toi.
-3. Clique sur **JOUER**.
-4. Déplace le chat avec les **flèches du clavier** (ou **ZQSD** / **WASD**).
+3. Sur la **page d'accueil**, choisis un niveau (les niveaux se débloquent au fur
+   et à mesure). Le **mode sans fin** s'ouvre après 3 niveaux terminés.
+4. Déplace le chat avec les **flèches** (ou **ZQSD** / **WASD**).
 5. **Attrape tous les poissons d'or** : la sortie se déverrouille alors.
-6. **Évite les chiens** : tout contact provoque un *Game Over*.
-7. Atteins la **sortie** (verte) avant la fin du **chronomètre**.
-8. **P** ou **Échap** = pause ; bouton **Son ON/OFF** = musique.
+6. **Évite les chiens** et atteins la **sortie** avant la fin du chronomètre.
+7. **P** ou **Échap** = pause ; bouton **Son ON/OFF** = musique.
 
 ### Score
-- **+100** points par poisson d'or collecté.
-- **+250** points pour une étoile bonus.
-- **+10 secondes** pour une horloge bonus.
+- **+100** points par poisson d'or, **+250** pour une étoile bonus,
+  **+10 secondes** pour une horloge bonus.
 - **Bonus de temps** en fin de niveau : `temps restant × 5`.
+- Le score est enregistré **par niveau** : rejoue un niveau pour l'améliorer.
+- Le mode sans fin retient le **nombre de salles franchies**.
 
-> Le score est enregistré à la fin de **chaque niveau réussi**. Un *Game Over*
-> (chien ou temps écoulé) n'enregistre **pas** le score (règle RM9).
+> Un *Game Over* (chien ou temps écoulé) n'enregistre pas le score (règle RM9).
 
 ---
 
@@ -178,70 +170,40 @@ Un compte administrateur est créé automatiquement au premier démarrage :
 SuperCat/
 ├── pom.xml                      # Configuration Maven
 ├── config.properties.example    # Modèle de configuration
-├── README.md
 └── src/
     ├── main/java/com/supercat/
-    │   ├── Main.java             # Point d'entrée
-    │   ├── App.java              # Application JavaFX
-    │   ├── SceneManager.java     # Navigation entre écrans
-    │   ├── model/                # Objets du jeu + modèle de données
-    │   │   ├── GameObject.java   (classe abstraite)
-    │   │   ├── Cat.java  Dog.java  Fish.java  Bonus.java
-    │   │   ├── Wall.java  Exit.java
-    │   │   └── User.java  ScoreEntry.java
-    │   ├── engine/               # Moteur de jeu
-    │   │   ├── GameEngine.java   CollisionManager.java
-    │   │   ├── Level.java  LevelLoader.java  MusicPlayer.java
-    │   │   ├── GameState.java  GameListener.java  FloatingText.java
-    │   ├── database/
-    │   │   └── DatabaseManager.java   # Singleton MongoDB
-    │   ├── service/
-    │   │   ├── Config.java       # Chargement des identifiants
-    │   │   └── EmailService.java # Envoi des e-mails (Jakarta Mail)
-    │   ├── controller/           # Contrôleurs des écrans
-    │   │   ├── LoginController.java   MenuController.java
-    │   │   ├── GameController.java    AdminController.java
-    │   │   ├── ProfileController.java LeaderboardController.java
-    │   └── ui/
-    │       ├── Theme.java         # Couleurs et constantes
-    │       └── UIFactory.java     # Composants graphiques stylisés
-    └── test/java/com/supercat/    # Tests unitaires JUnit 5
+    │   ├── Main.java  App.java  SceneManager.java
+    │   ├── model/                # GameObject, Cat, Dog, Fish, Bonus,
+    │   │                         #   Wall, Exit, User, ScoreEntry
+    │   ├── engine/               # GameEngine, CollisionManager, Level,
+    │   │                         #   LevelLoader (génération procédurale),
+    │   │                         #   MusicPlayer, GameState, GameListener
+    │   ├── database/             # DatabaseManager (Singleton MongoDB)
+    │   ├── service/              # Config, EmailService (Jakarta Mail)
+    │   ├── controller/           # Login, Home, Game, Admin,
+    │   │                         #   Profile, Leaderboard
+    │   └── ui/                   # Theme, UIFactory
+    └── test/java/com/supercat/   # Tests unitaires JUnit 5
 ```
-
-L'architecture suit le découpage en couches du dossier de conception :
-**présentation** (`ui`, `controller`) → **moteur** (`engine`) →
-**services** (`service`) → **modèle** (`model`) → **persistance** (`database`).
 
 ---
 
 ## 🗄️ Base de données
 
-Base **MongoDB**, base `supercat`, deux collections :
+Base **MongoDB** (`supercat`), deux collections :
 
-**users**
-| Champ | Description |
-|-------|-------------|
-| `_id` | identifiant unique (ObjectId) |
-| `username` | pseudo (unique) |
-| `password` | mot de passe haché BCrypt |
-| `email` | adresse e-mail |
-| `role` | `joueur` ou `admin` |
-| `verified` | `true` si le compte a été vérifié par e-mail |
-| `verificationCode` | code de vérification (supprimé après activation) |
+**users** — `username`, `password` (haché BCrypt), `email`, `role`,
+`verified`, `verificationCode`.
 
-**scores**
-| Champ | Description |
-|-------|-------------|
-| `_id` | identifiant unique (ObjectId) |
-| `username` | propriétaire du score |
-| `value` | valeur numérique du score |
-| `date` | date et heure de la partie |
+**scores** — `username`, `level` (0 à 11 pour la campagne, `-1` pour le mode
+sans fin), `value` (points, ou nombre de salles franchies en mode sans fin),
+`date`.
 
 ---
 
 ## ✅ Tests unitaires
 
-24 tests répartis en 5 classes (`mvn test`) :
+26 tests répartis en 5 classes (`mvn test`) :
 
 | Classe de test | Vérifie |
 |----------------|---------|
@@ -249,7 +211,7 @@ Base **MongoDB**, base `supercat`, deux collections :
 | `GameObjectTest` | Déplacement du chat, patrouille des chiens, poissons, bonus. |
 | `UserTest` | Le modèle `User` (rôles, score, profil, vérification). |
 | `PasswordSecurityTest` | Le hachage BCrypt des mots de passe (RM1). |
-| `LevelLoaderTest` | Le chargement des 3 niveaux et la difficulté progressive. |
+| `LevelLoaderTest` | La génération procédurale (campagne + mode sans fin). |
 
 ---
 
@@ -258,20 +220,14 @@ Base **MongoDB**, base `supercat`, deux collections :
 Le projet est hébergé sur GitHub : **https://github.com/DeusSebyum11724/SuperCat**
 
 ```bash
-# Cloner le dépôt
 git clone https://github.com/DeusSebyum11724/SuperCat.git
-
-# Récupérer les dernières modifications depuis GitHub
 git pull origin main
-
-# Envoyer ses modifications vers GitHub
 git add .
 git commit -m "Description des modifications"
 git push origin main
 ```
 
-> Après le clonage, créez le fichier `config.properties` (voir la section
-> **Configuration**) : il n'est pas inclus dans le dépôt.
+> Après le clonage, créez le fichier `config.properties` (voir **Configuration**).
 
 ---
 

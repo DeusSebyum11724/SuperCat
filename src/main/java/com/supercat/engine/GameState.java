@@ -1,23 +1,21 @@
 package com.supercat.engine;
 
 /**
- * Les differents etats possibles d'une partie de SuperCat. Ils correspondent
- * aux etats decrits dans le diagramme d'activite du jeu.
+ * Etats possibles d'un niveau de SuperCat. Chaque niveau se joue
+ * independamment : il se termine par une reussite (LEVEL_COMPLETE) ou un
+ * echec (GAME_OVER).
  */
 public enum GameState {
 
-    /** La partie est en cours : le joueur controle le chat. */
+    /** Le niveau est en cours : le joueur controle le chat. */
     PLAYING,
 
-    /** La partie est en pause. */
+    /** Le niveau est en pause. */
     PAUSED,
 
-    /** Le niveau courant est termine, en attente du niveau suivant. */
+    /** Le niveau est reussi : le chat a atteint la sortie. */
     LEVEL_COMPLETE,
 
     /** Game Over : collision avec un chien ou temps ecoule (regle RM9). */
-    GAME_OVER,
-
-    /** Tous les niveaux ont ete termines : victoire finale. */
-    GAME_WON
+    GAME_OVER
 }

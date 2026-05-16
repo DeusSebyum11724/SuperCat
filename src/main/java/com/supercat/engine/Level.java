@@ -14,14 +14,13 @@ import java.util.List;
  * murs, le chat a sa position de depart, les poissons d'or, les chiens, les
  * bonus et la sortie.
  *
- * Un objet Level est produit par le LevelLoader a partir de la definition
- * du niveau. Le jeu propose plusieurs niveaux : c'est l'une des
- * fonctionnalites avancees d'un projet de Type A.
+ * Un objet Level est produit par le LevelLoader (generation procedurale).
  */
 public class Level {
 
     private final int index;
     private final String name;
+    private final String difficultyLabel;
     private final int timeLimit;          // secondes accordees au joueur
     private final Cat cat;
     private final Exit exit;
@@ -30,10 +29,12 @@ public class Level {
     private final List<Dog> dogs;
     private final List<Bonus> bonuses;
 
-    public Level(int index, String name, int timeLimit, Cat cat, Exit exit,
-                 List<Wall> walls, List<Fish> fish, List<Dog> dogs, List<Bonus> bonuses) {
+    public Level(int index, String name, String difficultyLabel, int timeLimit,
+                 Cat cat, Exit exit, List<Wall> walls, List<Fish> fish,
+                 List<Dog> dogs, List<Bonus> bonuses) {
         this.index = index;
         this.name = name;
+        this.difficultyLabel = difficultyLabel;
         this.timeLimit = timeLimit;
         this.cat = cat;
         this.exit = exit;
@@ -45,6 +46,7 @@ public class Level {
 
     public int getIndex() { return index; }
     public String getName() { return name; }
+    public String getDifficultyLabel() { return difficultyLabel; }
     public int getTimeLimit() { return timeLimit; }
     public Cat getCat() { return cat; }
     public Exit getExit() { return exit; }

@@ -9,18 +9,25 @@ import com.supercat.model.Wall;
 import com.supercat.ui.Theme;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 /**
- * Constructeur des niveaux du jeu. Le jeu comporte 3 labyrinthes (plusieurs
- * niveaux = fonctionnalite avancee de Type A).
+ * Generateur procedural de niveaux.
  *
- * Les labyrinthes sont generes de facon structurelle plutot que saisis
- * caractere par caractere : un labyrinthe est compose de couloirs (lignes ou
- * colonnes entierement ouvertes) relies par des passages perces dans les
- * murs. Cette construction GARANTIT que le labyrinthe est toujours
- * entierement connecte : le chat peut atteindre tous les poissons et la
- * sortie, quel que soit le niveau.
+ * Chaque niveau est genere automatiquement a partir de son indice : le meme
+ * indice produit toujours exactement le meme labyrinthe (generation
+ * deterministe), ce qui permet de rejouer un niveau et d'ameliorer son score.
+ *
+ *  - Indices 0 a 11  : les 12 niveaux de la campagne.
+ *  - Indices 12 et + : le mode sans fin (genere a l'infini, difficulte
+ *    croissante).
+ *
+ * La construction garantit que le labyrinthe est toujours entierement
+ * connecte : couloirs (lignes ou colonnes ouvertes) relies par des passages,
+ * avec au moins un passage par mur. Le chat peut donc toujours atteindre
+ * tous les poissons et la sortie.
  */
 public final class LevelLoader {
 
@@ -31,129 +38,128 @@ public final class LevelLoader {
     private static final double T = Theme.TILE;
     private static final int COLS = Theme.COLS;
     private static final int ROWS = Theme.ROWS;
-    private static final int LEVEL_COUNT = 3;
+    private static final int CAMPAIGN_COUNT = 12;
 
-    /** Nombre total de niveaux disponibles. */
-    public static int getLevelCount() {
-        return LEVEL_COUNT;
+    private static final String[] NAMES = {
+            "Le Jardin", "Les Galeries", "Le Vieux Grenier", "La Citerne",
+            "Les Cloitres", "Le Dedale", "La Cave Oubliee", "Les Toits",
+            "Le Sanctuaire", "Les Catacombes", "La Tour", "Le Palais"
+    };
+
+    /** Nombre de niveaux de la campagne. */
+    public static int getCampaignCount() {
+        return CAMPAIGN_COUNT;
     }
 
-    /** Charge et instancie le niveau d'indice donne (0, 1 ou 2). */
+    /** Nom d'un niveau. */
+    public static String getLevelName(int index) {
+        if (index >= 0 && index < CAMPAIGN_COUNT) {
+            return NAMES[index];
+        }
+        return "Salle sans fin " + (index - CAMPAIGN_COUNT + 1);
+    }
+
+    /** Etiquette de difficulte d'un niveau. */
+    public static String getDifficultyLabel(int index) {
+        if (index <= 2) {
+            return "Facile";
+        }
+        if (index <= 5) {
+            return "Moyen";
+        }
+        if (index <= 8) {
+            return "Difficile";
+        }
+        if (index <= 11) {
+            return "Expert";
+        }
+        return "Extreme";
+    }
+
+    /** Genere (de facon deterministe) le niveau d'indice donne. */
     public static Level load(int index) {
-        return switch (index) {
-            case 0 -> level1();
-            case 1 -> level2();
-            default -> level3();
-        };
-    }
+        Random rng = new Random(index * 2654435761L + 12345L);
+        boolean horizontal = (index % 2 == 0);
+        int diff = index;
 
-    // =====================================================================
-    //  NIVEAU 1 - "Le Grenier" : couloirs horizontaux, peu de chiens (facile)
-    // =====================================================================
-    private static Level level1() {
-        int[][] passages = {
-                {3, 9, 15},        // rangee-mur 2
-                {1, 7, 13, 17},    // rangee-mur 4
-                {5, 11, 15},       // rangee-mur 6
-                {1, 9, 13, 17},    // rangee-mur 8
-                {3, 7, 15}         // rangee-mur 10
-        };
-        boolean[][] grid = horizontalGrid(passages);
-        int[][] fish   = {{1, 13}, {3, 5}, {5, 15}, {7, 3}, {9, 11}, {11, 5}};
-        int[][] dogs   = {{5, 9, 0}, {9, 7, 0}};   // 0 = patrouille horizontale
-        int[][] stars  = {};
-        int[][] clocks = {{7, 15}};
-        return assemble(0, "Le Grenier", 75, 1.5, grid, 1, 1, 11, 17,
-                fish, dogs, stars, clocks);
-    }
+        int fishCount = clamp(5 + diff, 5, 18);
+        int dogCount = clamp(1 + (diff * 2) / 3, 1, 11);
+        double dogSpeed = Math.min(1.4 + diff * 0.13, 3.2);
+        int passagesPerWall = clamp(4 - diff / 3, 1, 4);
+        int bonusCount = clamp(1 + diff / 4, 1, 3);
+        int timeLimit = Math.min(55 + fishCount * 5 + dogCount * 3, 140);
 
-    // =====================================================================
-    //  NIVEAU 2 - "La Cave" : couloirs verticaux, 3 chiens (intermediaire)
-    // =====================================================================
-    private static Level level2() {
-        int[][] passages = {
-                {3, 9},        // colonne-mur 2
-                {1, 7, 11},    // colonne-mur 4
-                {5, 9},        // colonne-mur 6
-                {3, 7, 11},    // colonne-mur 8
-                {1, 5, 9},     // colonne-mur 10
-                {3, 7, 11},    // colonne-mur 12
-                {5, 9},        // colonne-mur 14
-                {1, 7, 11}     // colonne-mur 16
-        };
-        boolean[][] grid = verticalGrid(passages);
-        int[][] fish   = {{3, 3}, {1, 5}, {9, 5}, {5, 7}, {11, 9}, {3, 11}, {7, 13}, {5, 15}};
-        int[][] dogs   = {{5, 3, 1}, {7, 9, 1}, {9, 15, 1}};   // 1 = patrouille verticale
-        int[][] stars  = {{7, 7}};
-        int[][] clocks = {{9, 11}};
-        return assemble(1, "La Cave", 85, 1.9, grid, 1, 1, 11, 17,
-                fish, dogs, stars, clocks);
-    }
+        boolean[][] grid = horizontal
+                ? buildHorizontal(rng, passagesPerWall)
+                : buildVertical(rng, passagesPerWall);
 
-    // =====================================================================
-    //  NIVEAU 3 - "Le Labyrinthe" : passages rares, 4 chiens rapides (difficile)
-    // =====================================================================
-    private static Level level3() {
-        int[][] passages = {
-                {5, 15},     // rangee-mur 2
-                {3, 11},     // rangee-mur 4
-                {9, 17},     // rangee-mur 6
-                {1, 13},     // rangee-mur 8
-                {7, 15}      // rangee-mur 10
-        };
-        boolean[][] grid = horizontalGrid(passages);
-        int[][] fish   = {{1, 9}, {1, 17}, {3, 5}, {3, 15}, {5, 3},
-                          {5, 13}, {7, 7}, {9, 1}, {9, 15}, {11, 5}};
-        int[][] dogs   = {{3, 9, 0}, {5, 7, 0}, {7, 13, 0}, {9, 5, 0}};
-        int[][] stars  = {{7, 17}};
-        int[][] clocks = {{11, 15}};
-        return assemble(2, "Le Labyrinthe", 100, 2.3, grid, 1, 1, 11, 9,
-                fish, dogs, stars, clocks);
-    }
+        int catR = 1;
+        int catC = 1;
+        int exitR = 11;
+        int exitC = 17;
 
-    // =====================================================================
-    //  Construction des grilles de murs
-    // =====================================================================
-
-    /**
-     * Labyrinthe a couloirs HORIZONTAUX : les rangees impaires sont des
-     * couloirs entierement ouverts, les rangees paires sont des murs perces
-     * de passages. Chaque rangee-mur ayant au moins un passage, la grille est
-     * forcement entierement connectee.
-     */
-    private static boolean[][] horizontalGrid(int[][] passagesByWallRow) {
-        boolean[][] wall = new boolean[ROWS][COLS];
-        addBorders(wall);
-        for (int r = 2; r < ROWS - 1; r += 2) {
-            for (int c = 1; c < COLS - 1; c++) {
-                wall[r][c] = true;
+        // cellules de couloir disponibles (hors chat et sortie), melangees
+        List<int[]> pool = new ArrayList<>();
+        for (int[] cell : corridorCells(horizontal)) {
+            boolean isCat = (cell[0] == catR && cell[1] == catC);
+            boolean isExit = (cell[0] == exitR && cell[1] == exitC);
+            if (!isCat && !isExit) {
+                pool.add(cell);
             }
         }
-        for (int i = 0; i < passagesByWallRow.length; i++) {
-            int wallRow = 2 + 2 * i;
-            for (int col : passagesByWallRow[i]) {
-                wall[wallRow][col] = false;
+        Collections.shuffle(pool, rng);
+
+        int p = 0;
+        List<int[]> fishCells = new ArrayList<>();
+        while (fishCells.size() < fishCount && p < pool.size()) {
+            fishCells.add(pool.get(p++));
+        }
+        List<int[]> dogCells = new ArrayList<>();
+        while (dogCells.size() < dogCount && p < pool.size()) {
+            int[] cell = pool.get(p++);
+            // un chien ne doit pas apparaitre trop pres du chat (depart equitable)
+            if (Math.abs(cell[0] - catR) + Math.abs(cell[1] - catC) >= 4) {
+                dogCells.add(cell);
+            }
+        }
+        List<int[]> bonusCells = new ArrayList<>();
+        while (bonusCells.size() < bonusCount && p < pool.size()) {
+            bonusCells.add(pool.get(p++));
+        }
+
+        return assemble(index, getLevelName(index), getDifficultyLabel(index), timeLimit,
+                dogSpeed, horizontal, grid, catR, catC, exitR, exitC,
+                fishCells, dogCells, bonusCells);
+    }
+
+    // =====================================================================
+    //  Construction de la grille de murs
+    // =====================================================================
+    private static boolean[][] buildHorizontal(Random rng, int passagesPerWall) {
+        boolean[][] wall = new boolean[ROWS][COLS];
+        addBorders(wall);
+        int[] oddCols = {1, 3, 5, 7, 9, 11, 13, 15, 17};
+        for (int r = 2; r <= ROWS - 2; r += 2) {          // rangees-mur 2,4,6,8,10
+            for (int c = 1; c <= COLS - 2; c++) {
+                wall[r][c] = true;
+            }
+            for (int col : pickDistinct(rng, oddCols, passagesPerWall)) {
+                wall[r][col] = false;
             }
         }
         return wall;
     }
 
-    /**
-     * Labyrinthe a couloirs VERTICAUX : les colonnes impaires sont des
-     * couloirs ouverts, les colonnes paires sont des murs perces de passages.
-     */
-    private static boolean[][] verticalGrid(int[][] passagesByWallCol) {
+    private static boolean[][] buildVertical(Random rng, int passagesPerWall) {
         boolean[][] wall = new boolean[ROWS][COLS];
         addBorders(wall);
-        for (int c = 2; c < COLS - 1; c += 2) {
-            for (int r = 1; r < ROWS - 1; r++) {
+        int[] oddRows = {1, 3, 5, 7, 9, 11};
+        for (int c = 2; c <= COLS - 2; c += 2) {          // colonnes-mur 2,4,...,16
+            for (int r = 1; r <= ROWS - 2; r++) {
                 wall[r][c] = true;
             }
-        }
-        for (int i = 0; i < passagesByWallCol.length; i++) {
-            int wallCol = 2 + 2 * i;
-            for (int row : passagesByWallCol[i]) {
-                wall[row][wallCol] = false;
+            for (int row : pickDistinct(rng, oddRows, passagesPerWall)) {
+                wall[row][c] = false;
             }
         }
         return wall;
@@ -170,13 +176,47 @@ public final class LevelLoader {
         }
     }
 
+    /** Liste des cellules de couloir (toutes connectees entre elles). */
+    private static List<int[]> corridorCells(boolean horizontal) {
+        List<int[]> cells = new ArrayList<>();
+        if (horizontal) {
+            for (int r = 1; r <= ROWS - 2; r += 2) {
+                for (int c = 1; c <= COLS - 2; c++) {
+                    cells.add(new int[]{r, c});
+                }
+            }
+        } else {
+            for (int c = 1; c <= COLS - 2; c += 2) {
+                for (int r = 1; r <= ROWS - 2; r++) {
+                    cells.add(new int[]{r, c});
+                }
+            }
+        }
+        return cells;
+    }
+
+    private static int[] pickDistinct(Random rng, int[] options, int count) {
+        List<Integer> list = new ArrayList<>();
+        for (int option : options) {
+            list.add(option);
+        }
+        Collections.shuffle(list, rng);
+        int n = Math.min(count, list.size());
+        int[] result = new int[n];
+        for (int i = 0; i < n; i++) {
+            result[i] = list.get(i);
+        }
+        return result;
+    }
+
     // =====================================================================
-    //  Instanciation des objets du niveau a partir de la grille
+    //  Instanciation des objets du niveau
     // =====================================================================
-    private static Level assemble(int index, String name, int timeLimit, double dogSpeed,
-                                  boolean[][] grid, int catR, int catC, int exitR, int exitC,
-                                  int[][] fishCells, int[][] dogCells,
-                                  int[][] starCells, int[][] clockCells) {
+    private static Level assemble(int index, String name, String difficulty, int timeLimit,
+                                  double dogSpeed, boolean horizontal, boolean[][] grid,
+                                  int catR, int catC, int exitR, int exitC,
+                                  List<int[]> fishCells, List<int[]> dogCells,
+                                  List<int[]> bonusCells) {
 
         List<Wall> walls = new ArrayList<>();
         for (int r = 0; r < ROWS; r++) {
@@ -199,7 +239,7 @@ public final class LevelLoader {
         for (int[] cell : dogCells) {
             Dog dog = new Dog(centered(cell[1], Dog.SIZE), centered(cell[0], Dog.SIZE), COLS * T);
             dog.setSpeed(dogSpeed);
-            if (cell[2] == 0) {
+            if (horizontal) {
                 dog.setHorizontal();
             } else {
                 dog.setVertical();
@@ -208,20 +248,20 @@ public final class LevelLoader {
         }
 
         List<Bonus> bonuses = new ArrayList<>();
-        for (int[] cell : starCells) {
-            bonuses.add(new Bonus(centered(cell[1], Bonus.SIZE), centered(cell[0], Bonus.SIZE),
-                    Bonus.Type.POINTS));
-        }
-        for (int[] cell : clockCells) {
-            bonuses.add(new Bonus(centered(cell[1], Bonus.SIZE), centered(cell[0], Bonus.SIZE),
-                    Bonus.Type.TIME));
+        for (int i = 0; i < bonusCells.size(); i++) {
+            int[] cell = bonusCells.get(i);
+            Bonus.Type type = (i % 2 == 0) ? Bonus.Type.POINTS : Bonus.Type.TIME;
+            bonuses.add(new Bonus(centered(cell[1], Bonus.SIZE), centered(cell[0], Bonus.SIZE), type));
         }
 
-        return new Level(index, name, timeLimit, cat, exit, walls, fish, dogs, bonuses);
+        return new Level(index, name, difficulty, timeLimit, cat, exit, walls, fish, dogs, bonuses);
     }
 
-    /** Calcule la coordonnee en pixels d'un objet centre dans une cellule. */
     private static double centered(int cell, double objectSize) {
         return cell * T + (T - objectSize) / 2.0;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }

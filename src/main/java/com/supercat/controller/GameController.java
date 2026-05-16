@@ -5,6 +5,7 @@ import com.supercat.database.DatabaseManager;
 import com.supercat.engine.GameEngine;
 import com.supercat.engine.GameListener;
 import com.supercat.engine.GameState;
+import com.supercat.engine.LevelLoader;
 import com.supercat.engine.MusicPlayer;
 import com.supercat.model.User;
 import com.supercat.ui.Theme;
@@ -31,14 +32,22 @@ import java.util.Set;
 /**
  * Controleur de l'ecran de jeu (cas d'utilisation UC2 / UC3).
  *
- * Il cree le moteur de jeu, affiche la zone de jeu (canvas), le bandeau
- * d'informations (HUD), joue la musique d'ambiance, et reagit aux evenements
- * du moteur via l'interface GameListener (fin de niveau, Game Over, victoire).
+ * Gere deux modes :
+ *  - campagne : un niveau choisi sur la page d'accueil, score enregistre
+ *    par niveau (rejouable pour ameliorer son score) ;
+ *  - mode sans fin : des salles generees a l'infini, difficulte croissante,
+ *    le score retenu est le nombre de salles franchies.
  */
 public class GameController implements GameListener {
 
     private final SceneManager sceneManager;
     private final Set<KeyCode> activeKeys = new HashSet<>();
+
+    private final boolean endless;
+    private final int startIndex;
+    private int currentIndex;
+    private int endlessCleared = 0;
+    private boolean endlessSaved = false;
 
     private GameEngine engine;
     private MusicPlayer music;
@@ -46,12 +55,16 @@ public class GameController implements GameListener {
     private StackPane overlay;
 
     private final Label levelValue = new Label();
+    private final Label difficultyValue = new Label();
     private final Label scoreValue = new Label();
     private final Label fishValue = new Label();
     private final Label timeValue = new Label();
 
-    public GameController(SceneManager sceneManager) {
+    public GameController(SceneManager sceneManager, int levelIndex, boolean endless) {
         this.sceneManager = sceneManager;
+        this.endless = endless;
+        this.startIndex = levelIndex;
+        this.currentIndex = levelIndex;
         initialize();
     }
 
@@ -68,7 +81,7 @@ public class GameController implements GameListener {
         music = new MusicPlayer();
 
         overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
+        overlay.setStyle("-fx-background-color: rgba(62,56,82,0.62);");
         overlay.setVisible(false);
 
         StackPane gameArea = new StackPane(canvas, overlay);
@@ -81,60 +94,70 @@ public class GameController implements GameListener {
         root.setCenter(gameArea);
         BorderPane.setAlignment(gameArea, Pos.CENTER);
 
-        // ecouteurs clavier installes au niveau de la scene
         Scene scene = sceneManager.getScene();
         scene.setOnKeyPressed(this::handleKeyPressed);
         scene.setOnKeyReleased(this::handleKeyReleased);
 
-        engine.startNewGame();
+        engine.playLevel(currentIndex);
         engine.start();
         music.start();
     }
 
-    /** Construit le bandeau d'informations affiche au-dessus du jeu. */
     private HBox buildHud() {
-        HBox hud = new HBox(16);
+        HBox hud = new HBox(14);
         hud.setAlignment(Pos.CENTER_LEFT);
-        hud.setPadding(new Insets(12, 18, 12, 18));
-        hud.setStyle("-fx-background-color: #243140;");
+        hud.setPadding(new Insets(11, 16, 11, 16));
+        hud.setStyle("-fx-background-color: " + Theme.HUD_BG + ";");
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button musicBtn = UIFactory.secondaryButton("Son ON");
+        Button musicBtn = hudButton("Son ON");
         musicBtn.setOnAction(e -> {
             music.setMuted(!music.isMuted());
             musicBtn.setText(music.isMuted() ? "Son OFF" : "Son ON");
         });
-        Button pauseBtn = UIFactory.secondaryButton("Pause");
+        Button pauseBtn = hudButton("Pause");
         pauseBtn.setOnAction(e -> togglePause());
-        Button quitBtn = UIFactory.dangerButton("Quitter");
-        quitBtn.setOnAction(e -> exitToMenu());
+        Button quitBtn = hudButton("Quitter");
+        quitBtn.setOnAction(e -> exitToHome());
 
         hud.getChildren().addAll(
-                statBlock("NIVEAU", levelValue, 165),
+                statBlock("NIVEAU", levelValue, 150),
+                statBlock("DIFFICULTE", difficultyValue, 92),
                 statBlock("SCORE", scoreValue, 78),
-                statBlock("POISSONS", fishValue, 85),
-                statBlock("TEMPS", timeValue, 68),
+                statBlock("POISSONS", fishValue, 86),
+                statBlock("TEMPS", timeValue, 66),
                 spacer, musicBtn, pauseBtn, quitBtn);
         return hud;
     }
 
     private VBox statBlock(String caption, Label valueLabel, double minWidth) {
         Label cap = new Label(caption);
-        cap.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #9FB0BF;");
+        cap.setStyle("-fx-font-size: 9.5px; -fx-font-weight: bold; -fx-text-fill: #ABA2BC;");
         valueLabel.setStyle(valueStyle("white"));
-        VBox box = new VBox(1, cap, valueLabel);
+        VBox box = new VBox(2, cap, valueLabel);
         box.setMinWidth(minWidth);
         return box;
     }
 
     private String valueStyle(String color) {
-        return "-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: " + color + ";";
+        return "-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";";
+    }
+
+    private Button hudButton(String text) {
+        Button b = new Button(text);
+        String base = "-fx-background-color: #564E6E; -fx-text-fill: white; -fx-cursor: hand; "
+                + "-fx-font-size: 12.5px; -fx-font-weight: bold; -fx-background-radius: 16; "
+                + "-fx-padding: 7 14 7 14;";
+        b.setStyle(base);
+        b.setOnMouseEntered(e -> b.setStyle(base.replace("#564E6E", "#675E84")));
+        b.setOnMouseExited(e -> b.setStyle(base));
+        return b;
     }
 
     // =====================================================================
-    //  Gestion du clavier
+    //  Clavier
     // =====================================================================
     public void handleKeyPressed(KeyEvent event) {
         KeyCode code = event.getCode();
@@ -150,39 +173,68 @@ public class GameController implements GameListener {
     }
 
     // =====================================================================
-    //  Evenements du moteur de jeu (interface GameListener)
+    //  Evenements du moteur (GameListener)
     // =====================================================================
     @Override
     public void onTick() {
-        levelValue.setText(engine.getLevelName()
-                + "  (" + engine.getLevelNumber() + "/" + engine.getTotalLevels() + ")");
+        if (endless) {
+            levelValue.setText(engine.getLevelName());
+        } else {
+            levelValue.setText(engine.getLevelName()
+                    + "  (" + (currentIndex + 1) + "/" + LevelLoader.getCampaignCount() + ")");
+        }
+        difficultyValue.setText(engine.getLevelDifficulty());
+        difficultyValue.setStyle(valueStyle(difficultyColor(engine.getLevelDifficulty())));
         scoreValue.setText(String.valueOf(engine.getScore()));
 
         int collected = engine.getFishCollected();
         int total = engine.getFishTotal();
         fishValue.setText(collected + " / " + total);
-        fishValue.setStyle(valueStyle(collected >= total ? "#2ECC71" : "white"));
+        fishValue.setStyle(valueStyle(collected >= total ? "#9BD0B4" : "white"));
 
         int t = engine.getTimeLeft();
         timeValue.setText(String.format("%d:%02d", t / 60, t % 60));
-        timeValue.setStyle(valueStyle(t <= 10 ? "#E74C3C" : "white"));
+        timeValue.setStyle(valueStyle(t <= 10 ? "#E79A8E" : "white"));
     }
 
     @Override
     public void onLevelComplete() {
-        // le score est enregistre des qu'un niveau est reussi : le classement
-        // se remplit ainsi meme sans terminer les trois niveaux.
-        saveFinalScore();
-        Button next = UIFactory.successButton("Niveau suivant");
-        next.setOnAction(e -> {
-            hideOverlay();
-            engine.nextLevel();
-        });
-        Button menu = UIFactory.secondaryButton("Menu principal");
-        menu.setOnAction(e -> exitToMenu());
-        showOverlay("Niveau termine !",
-                "Bravo ! Tu as termine le niveau " + engine.getLevelNumber() + ".\n"
-                        + "Score actuel : " + engine.getScore() + " points (enregistre).", next, menu);
+        if (endless) {
+            endlessCleared++;
+            Button cont = UIFactory.successButton("Continuer");
+            cont.setOnAction(e -> advanceLevel());
+            Button quit = UIFactory.secondaryButton("Quitter");
+            quit.setOnAction(e -> exitToHome());
+            showOverlay("Salle franchie !",
+                    "Salles franchies dans cette partie : " + endlessCleared
+                            + "\nLa difficulte continue d'augmenter...", cont, quit);
+        } else {
+            boolean record = saveCampaignScore();
+            int best = currentBest();
+            boolean hasNext = currentIndex + 1 < LevelLoader.getCampaignCount();
+
+            Button replay = UIFactory.secondaryButton("Rejouer ce niveau");
+            replay.setOnAction(e -> {
+                hideOverlay();
+                engine.restart();
+            });
+            Button home = UIFactory.secondaryButton("Page d'accueil");
+            home.setOnAction(e -> exitToHome());
+
+            String detail = "Score du niveau : " + engine.getScore() + " points\n"
+                    + (record ? "Nouveau record pour ce niveau !"
+                              : "Ton meilleur : " + best + " points");
+            if (hasNext) {
+                Button next = UIFactory.primaryButton("Niveau suivant");
+                next.setOnAction(e -> advanceLevel());
+                showOverlay("Niveau termine !", detail, next, replay, home);
+            } else {
+                showOverlay("Campagne terminee !",
+                        detail + "\n\nTu as termine les "
+                                + LevelLoader.getCampaignCount() + " niveaux. Bravo !",
+                        replay, home);
+            }
+        }
     }
 
     @Override
@@ -190,64 +242,94 @@ public class GameController implements GameListener {
         String reason = engine.getTimeLeft() <= 0
                 ? "Le temps est ecoule !"
                 : "Un chien t'a attrape !";
-        Button retry = UIFactory.primaryButton("Recommencer");
-        retry.setOnAction(e -> {
-            hideOverlay();
-            engine.restart();
-        });
-        Button menu = UIFactory.secondaryButton("Menu principal");
-        menu.setOnAction(e -> exitToMenu());
-        showOverlay("Game Over",
-                reason + "\n\nScore de la partie : " + engine.getScore()
-                        + " points (non enregistre).", retry, menu);
-    }
-
-    @Override
-    public void onGameWon() {
-        boolean newRecord = saveFinalScore();
-        Button replay = UIFactory.primaryButton("Rejouer");
-        replay.setOnAction(e -> {
-            hideOverlay();
-            engine.restart();
-        });
-        Button menu = UIFactory.secondaryButton("Menu principal");
-        menu.setOnAction(e -> exitToMenu());
-        String detail = "Felicitations ! Tu as termine les " + engine.getTotalLevels()
-                + " niveaux du labyrinthe.\nScore final : " + engine.getScore() + " points.";
-        if (newRecord) {
-            detail += "\n\n*** NOUVEAU RECORD PERSONNEL ! ***";
+        if (endless) {
+            finishEndlessRun();
+            Button retry = UIFactory.primaryButton("Recommencer");
+            retry.setOnAction(e -> restartEndless());
+            Button home = UIFactory.secondaryButton("Page d'accueil");
+            home.setOnAction(e -> exitToHome());
+            showOverlay("Game Over",
+                    reason + "\n\nTu as franchi " + endlessCleared + " salle(s) sans fin.",
+                    retry, home);
+        } else {
+            Button retry = UIFactory.primaryButton("Reessayer");
+            retry.setOnAction(e -> {
+                hideOverlay();
+                engine.restart();
+            });
+            Button home = UIFactory.secondaryButton("Page d'accueil");
+            home.setOnAction(e -> exitToHome());
+            showOverlay("Game Over",
+                    reason + "\n\nScore non enregistre (regle RM9).", retry, home);
         }
-        showOverlay("VICTOIRE !", detail, replay, menu);
     }
 
-    /**
-     * Enregistre le score courant en base de donnees (UC4). Retourne true
-     * s'il s'agit d'un nouveau record personnel. Appele a la fin de chaque
-     * niveau reussi et a la victoire finale ; jamais lors d'un Game Over
-     * (regle metier RM9).
-     */
-    public boolean saveFinalScore() {
+    // =====================================================================
+    //  Enregistrement des scores
+    // =====================================================================
+    private boolean saveCampaignScore() {
         User user = sceneManager.getCurrentUser();
         if (user == null) {
             return false;
         }
         DatabaseManager db = DatabaseManager.getInstance();
-        boolean newRecord = db.updateHighScore(user.getUsername(), engine.getScore());
-        user.setHighScore(db.getHighScore(user.getUsername()));
-        return newRecord;
+        boolean record = db.saveLevelScore(user.getUsername(), currentIndex, engine.getScore());
+        user.setHighScore(db.getTotalScore(user.getUsername()));
+        return record;
+    }
+
+    private int currentBest() {
+        User user = sceneManager.getCurrentUser();
+        if (user == null) {
+            return 0;
+        }
+        return DatabaseManager.getInstance().getLevelBest(user.getUsername(), currentIndex);
+    }
+
+    /** Enregistre une fois le resultat du mode sans fin (salles franchies). */
+    private void finishEndlessRun() {
+        if (endlessSaved || !endless || endlessCleared <= 0) {
+            return;
+        }
+        endlessSaved = true;
+        User user = sceneManager.getCurrentUser();
+        if (user != null) {
+            DatabaseManager.getInstance().saveEndlessResult(user.getUsername(), endlessCleared);
+        }
     }
 
     // =====================================================================
-    //  Pause et navigation
+    //  Navigation
     // =====================================================================
+    private void advanceLevel() {
+        hideOverlay();
+        currentIndex++;
+        engine.playLevel(currentIndex);
+    }
+
+    private void restartEndless() {
+        hideOverlay();
+        currentIndex = startIndex;
+        endlessCleared = 0;
+        endlessSaved = false;
+        engine.playLevel(currentIndex);
+    }
+
+    private void exitToHome() {
+        finishEndlessRun();
+        engine.stop();
+        music.stop();
+        sceneManager.showHome();
+    }
+
     private void togglePause() {
         GameState state = engine.getState();
         if (state == GameState.PLAYING) {
             engine.pause();
             Button resume = UIFactory.primaryButton("Reprendre");
             resume.setOnAction(e -> resumeGame());
-            Button quit = UIFactory.secondaryButton("Quitter vers le menu");
-            quit.setOnAction(e -> exitToMenu());
+            Button quit = UIFactory.secondaryButton("Quitter");
+            quit.setOnAction(e -> exitToHome());
             showOverlay("Pause", "La partie est en pause.\n"
                     + "Appuie sur P pour reprendre.", resume, quit);
         } else if (state == GameState.PAUSED) {
@@ -260,23 +342,27 @@ public class GameController implements GameListener {
         engine.resume();
     }
 
-    private void exitToMenu() {
-        engine.stop();
-        music.stop();
-        sceneManager.showMenu();
+    private String difficultyColor(String difficulty) {
+        return switch (difficulty) {
+            case "Facile" -> "#9BD0B4";
+            case "Moyen" -> "#A6C3D6";
+            case "Difficile" -> "#EAC98A";
+            case "Expert" -> "#EFAE99";
+            default -> "#E79A8E";
+        };
     }
 
     // =====================================================================
-    //  Panneau superpose (fin de niveau, Game Over, victoire, pause)
+    //  Panneau superpose
     // =====================================================================
     private void showOverlay(String headingText, String detailText, Button... actions) {
         VBox box = UIFactory.card();
-        box.setMaxWidth(400);
+        box.setMaxWidth(410);
         box.setMaxHeight(Region.USE_PREF_SIZE);
 
         Label detail = UIFactory.body(detailText);
         detail.setWrapText(true);
-        detail.setMaxWidth(330);
+        detail.setMaxWidth(340);
         detail.setStyle(detail.getStyle() + " -fx-font-size: 15px; -fx-text-alignment: center;");
 
         VBox buttons = new VBox(10, actions);
@@ -286,7 +372,7 @@ public class GameController implements GameListener {
             action.setMaxWidth(Double.MAX_VALUE);
         }
 
-        box.getChildren().setAll(UIFactory.catFace(68), UIFactory.heading(headingText),
+        box.getChildren().setAll(UIFactory.catFace(66), UIFactory.heading(headingText),
                 detail, buttons);
         overlay.getChildren().setAll(box);
         overlay.setVisible(true);

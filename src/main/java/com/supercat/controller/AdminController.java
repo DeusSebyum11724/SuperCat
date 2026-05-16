@@ -102,7 +102,7 @@ public class AdminController {
         table.getColumns().add(col("E-mail", "email", 175));
         table.getColumns().add(col("Role", "role", 70));
         table.getColumns().add(col("Verifie", "verifiedLabel", 70));
-        table.getColumns().add(col("Meilleur score", "highScore", 105));
+        table.getColumns().add(col("Score total", "highScore", 105));
         VBox.setVgrow(table, Priority.ALWAYS);
 
         Button delete = UIFactory.dangerButton("Supprimer le compte");

@@ -2,10 +2,11 @@ package com.supercat;
 
 import com.supercat.controller.AdminController;
 import com.supercat.controller.GameController;
+import com.supercat.controller.HomeController;
 import com.supercat.controller.LeaderboardController;
 import com.supercat.controller.LoginController;
-import com.supercat.controller.MenuController;
 import com.supercat.controller.ProfileController;
+import com.supercat.engine.LevelLoader;
 import com.supercat.model.User;
 import javafx.animation.FadeTransition;
 import javafx.scene.Parent;
@@ -36,14 +37,21 @@ public class SceneManager {
         setRoot(new LoginController(this).getView());
     }
 
-    public void showMenu() {
+    /** Page d'accueil du joueur : selection des niveaux. */
+    public void showHome() {
         clearKeyHandlers();
-        setRoot(new MenuController(this).getView());
+        setRoot(new HomeController(this).getView());
     }
 
-    public void showGame() {
+    /** Lance un niveau de la campagne. */
+    public void showCampaignLevel(int levelIndex) {
         // le GameController installe lui-meme les ecouteurs clavier
-        setRoot(new GameController(this).getView());
+        setRoot(new GameController(this, levelIndex, false).getView());
+    }
+
+    /** Lance le mode sans fin (a partir du premier niveau genere). */
+    public void showEndless() {
+        setRoot(new GameController(this, LevelLoader.getCampaignCount(), true).getView());
     }
 
     public void showAdmin() {
@@ -71,7 +79,6 @@ public class SceneManager {
 
     private void setRoot(Parent root) {
         scene.setRoot(root);
-        // transition en fondu pour une apparition douce de chaque ecran
         FadeTransition fade = new FadeTransition(Duration.millis(280), root);
         fade.setFromValue(0.0);
         fade.setToValue(1.0);
