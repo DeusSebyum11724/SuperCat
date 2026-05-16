@@ -8,6 +8,7 @@ import com.supercat.controller.LoginController;
 import com.supercat.controller.ProfileController;
 import com.supercat.controller.SettingsController;
 import com.supercat.controller.SplashController;
+import com.supercat.controller.StoryController;
 import com.supercat.controller.StudioSplashController;
 import com.supercat.engine.LevelLoader;
 import com.supercat.model.User;
@@ -31,15 +32,20 @@ import javafx.util.Duration;
  * Gestionnaire de navigation entre les ecrans.
  *
  * Tous les ecrans sont concus a une resolution fixe (860 x 660) puis mis a
- * l'echelle de maniere uniforme pour remplir la fenetre, y compris en plein
- * ecran (technique du "letterbox" : l'image conserve ses proportions, des
- * bandes sombres comblent l'espace restant). C'est l'approche habituelle des
- * jeux 2D pour s'adapter a toutes les resolutions.
+ * l'echelle pour remplir la fenetre. Le cadre adopte le meme fond que
+ * l'ecran affiche : l'image conserve ses proportions sans laisser
+ * apparaitre de bandes visibles, meme en plein ecran.
  */
 public class SceneManager {
 
+    private static final String CALM_FRAME =
+            "linear-gradient(to bottom, #F3EEE5 0%, #EBE4D6 100%)";
+    private static final String COZY_FRAME =
+            "linear-gradient(to bottom, #2A2440 0%, #3E3550 55%, #574752 100%)";
+
     private final Stage stage;
     private final Scene scene;
+    private final StackPane frame;
     private final Group screenGroup;
     private final Scale viewScale = new Scale();
 
@@ -50,9 +56,7 @@ public class SceneManager {
         this.stage = stage;
         this.scene = scene;
         this.screenGroup = new Group();
-
-        StackPane frame = new StackPane(screenGroup);
-        frame.setStyle("-fx-background-color: #241F30;");   // cadre sombre (letterbox)
+        this.frame = new StackPane(screenGroup);
         scene.setRoot(frame);
 
         DoubleBinding scaleFactor = Bindings.createDoubleBinding(() -> {
@@ -72,54 +76,63 @@ public class SceneManager {
 
     // ----- Navigation entre ecrans -----
 
-    /** Ecran-titre du studio (affiche en tout premier). */
     public void showStudioSplash() {
         clearKeyHandlers();
-        setRoot(new StudioSplashController(this).getView());
+        setRoot(new StudioSplashController(this).getView(), COZY_FRAME);
     }
 
-    /** Ecran-titre du jeu. */
     public void showSplash() {
         clearKeyHandlers();
-        setRoot(new SplashController(this).getView());
+        setRoot(new SplashController(this).getView(), CALM_FRAME);
     }
 
     public void showLogin() {
         clearKeyHandlers();
-        setRoot(new LoginController(this).getView());
+        setRoot(new LoginController(this).getView(), CALM_FRAME);
     }
 
     public void showHome() {
         clearKeyHandlers();
-        setRoot(new HomeController(this).getView());
+        setRoot(new HomeController(this).getView(), CALM_FRAME);
     }
 
     public void showCampaignLevel(int levelIndex) {
-        setRoot(new GameController(this, levelIndex, false).getView());
+        setRoot(new GameController(this, levelIndex).getView(), CALM_FRAME);
     }
 
     public void showEndless() {
-        setRoot(new GameController(this, LevelLoader.getCampaignCount(), true).getView());
+        setRoot(new GameController(this, LevelLoader.getCampaignCount()).getView(), CALM_FRAME);
+    }
+
+    /** Affiche l'ecran narratif du chapitre courant du mode Histoire. */
+    public void showStory() {
+        clearKeyHandlers();
+        setRoot(new StoryController(this).getView(), CALM_FRAME);
+    }
+
+    /** Lance le labyrinthe d'un chapitre du mode Histoire. */
+    public void showStoryLevel(int chapter) {
+        setRoot(new GameController(this, LevelLoader.storyIndex(chapter)).getView(), CALM_FRAME);
     }
 
     public void showAdmin() {
         clearKeyHandlers();
-        setRoot(new AdminController(this).getView());
+        setRoot(new AdminController(this).getView(), CALM_FRAME);
     }
 
     public void showProfile() {
         clearKeyHandlers();
-        setRoot(new ProfileController(this).getView());
+        setRoot(new ProfileController(this).getView(), CALM_FRAME);
     }
 
     public void showLeaderboard() {
         clearKeyHandlers();
-        setRoot(new LeaderboardController(this).getView());
+        setRoot(new LeaderboardController(this).getView(), CALM_FRAME);
     }
 
     public void showSettings() {
         clearKeyHandlers();
-        setRoot(new SettingsController(this).getView());
+        setRoot(new SettingsController(this).getView(), CALM_FRAME);
     }
 
     public void logout() {
@@ -129,7 +142,8 @@ public class SceneManager {
 
     // ----- Mecanique interne -----
 
-    private void setRoot(Parent screen) {
+    private void setRoot(Parent screen, String frameBackground) {
+        frame.setStyle("-fx-background-color: " + frameBackground + ";");
         if (currentScreen != null) {
             currentScreen.getTransforms().remove(viewScale);
         }
@@ -141,7 +155,6 @@ public class SceneManager {
             screen.setOpacity(1);
             return;
         }
-        // transition douce : fondu accompagne d'une legere mise a l'echelle
         screen.setOpacity(0);
         screen.setScaleX(0.985);
         screen.setScaleY(0.985);

@@ -47,7 +47,11 @@ Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
 - Statistiques globales : niveaux terminés, score total, record du mode sans fin.
 
 ### Le jeu
-- **12 niveaux** de campagne + un **mode sans fin** (génération infinie).
+- **Trois modes** : le **mode Histoire** (l'aventure de Nora, une petite chatte
+  qui rassemble les poissons d'or pour garder une vieille maison au chaud
+  pendant l'hiver — 7 chapitres narratifs), une **campagne** de 12 niveaux, et
+  un **mode sans fin** généré à l'infini.
+- Affichage **plein écran** avec mise à l'échelle proportionnelle.
 - **Génération procédurale** : chaque niveau est un labyrinthe généré
   automatiquement (toujours résoluble), identique à chaque fois.
 - **Musique d'ambiance** synthétisée + bouton activer/désactiver.

@@ -49,6 +49,7 @@ public class GameController implements GameListener {
     private final SceneManager sceneManager;
     private final Set<KeyCode> activeKeys = new HashSet<>();
 
+    private final boolean story;
     private final boolean endless;
     private final int startIndex;
     private int currentIndex;
@@ -70,11 +71,12 @@ public class GameController implements GameListener {
     private int lastCollected = -1;
     private int lastTotal = -1;
 
-    public GameController(SceneManager sceneManager, int levelIndex, boolean endless) {
+    public GameController(SceneManager sceneManager, int levelIndex) {
         this.sceneManager = sceneManager;
-        this.endless = endless;
         this.startIndex = levelIndex;
         this.currentIndex = levelIndex;
+        this.story = levelIndex >= LevelLoader.STORY_BASE;
+        this.endless = !story && levelIndex >= LevelLoader.getCampaignCount();
         initialize();
     }
 
@@ -260,7 +262,13 @@ public class GameController implements GameListener {
     @Override
     public void onTick() {
         levelValue.setText(engine.getLevelName());
-        levelCaption.setText(endless ? "MODE SANS FIN" : "NIVEAU " + (currentIndex + 1));
+        if (story) {
+            levelCaption.setText("CHAPITRE " + (currentIndex - LevelLoader.STORY_BASE + 1));
+        } else if (endless) {
+            levelCaption.setText("MODE SANS FIN");
+        } else {
+            levelCaption.setText("NIVEAU " + (currentIndex + 1));
+        }
 
         String difficulty = engine.getLevelDifficulty();
         difficultyTag.setText(difficulty);
@@ -297,6 +305,22 @@ public class GameController implements GameListener {
 
     @Override
     public void onLevelComplete() {
+        if (story) {
+            int chapter = currentIndex - LevelLoader.STORY_BASE;
+            saveStoryProgress(chapter + 1);
+            Button continueBtn = UIFactory.primaryButton("Continuer l'histoire");
+            continueBtn.setOnAction(e -> exitToStory());
+            Button replay = UIFactory.secondaryButton("Rejouer le chapitre");
+            replay.setOnAction(e -> {
+                hideOverlay();
+                engine.restart();
+            });
+            Button home = UIFactory.secondaryButton("Accueil");
+            home.setOnAction(e -> exitToHome());
+            showOverlay("Chapitre termine",
+                    "Nora a rassemble les lueurs de cette piece.", continueBtn, replay, home);
+            return;
+        }
         if (endless) {
             endlessCleared++;
             Button cont = UIFactory.successButton("Continuer");
@@ -338,6 +362,19 @@ public class GameController implements GameListener {
         String reason = engine.getTimeLeft() <= 0
                 ? "Le temps est ecoule."
                 : "Un chien t'a attrape.";
+        if (story) {
+            Button retry = UIFactory.primaryButton("Reessayer");
+            retry.setOnAction(e -> {
+                hideOverlay();
+                engine.restart();
+            });
+            Button back = UIFactory.secondaryButton("Mode Histoire");
+            back.setOnAction(e -> exitToStory());
+            Button home = UIFactory.secondaryButton("Accueil");
+            home.setOnAction(e -> exitToHome());
+            showOverlay("Reessaie", reason, retry, back, home);
+            return;
+        }
         if (endless) {
             finishEndlessRun();
             Button retry = UIFactory.primaryButton("Recommencer");
@@ -415,6 +452,19 @@ public class GameController implements GameListener {
         engine.stop();
         music.stop();
         sceneManager.showHome();
+    }
+
+    private void exitToStory() {
+        engine.stop();
+        music.stop();
+        sceneManager.showStory();
+    }
+
+    private void saveStoryProgress(int chaptersCompleted) {
+        User user = sceneManager.getCurrentUser();
+        if (user != null) {
+            DatabaseManager.getInstance().saveStoryProgress(user.getUsername(), chaptersCompleted);
+        }
     }
 
     private void togglePause() {

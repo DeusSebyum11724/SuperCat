@@ -2,6 +2,7 @@ package com.supercat;
 
 import com.supercat.engine.Level;
 import com.supercat.engine.LevelLoader;
+import com.supercat.engine.Story;
 import com.supercat.model.Fish;
 import com.supercat.model.Wall;
 import com.supercat.ui.Theme;
@@ -40,6 +41,13 @@ class LevelSolvabilityTest {
     void leModeSansFin_genereDesNiveauxToujoursResolubles() {
         for (int index = LevelLoader.getCampaignCount(); index <= 45; index++) {
             assertSolvable(index);
+        }
+    }
+
+    @Test
+    void leModeHistoire_genereDesNiveauxResolubles() {
+        for (int chapter = 0; chapter < Story.chapterCount(); chapter++) {
+            assertSolvable(LevelLoader.storyIndex(chapter));
         }
     }
 

@@ -3,13 +3,19 @@ package com.supercat.controller;
 import com.supercat.SceneManager;
 import com.supercat.database.DatabaseManager;
 import com.supercat.engine.LevelLoader;
+import com.supercat.engine.Story;
 import com.supercat.model.User;
 import com.supercat.ui.Theme;
 import com.supercat.ui.UIFactory;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -20,20 +26,26 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.StrokeLineCap;
+import javafx.util.Duration;
 
 import java.util.Map;
 
 /**
- * Page d'accueil du joueur : selection des niveaux.
+ * Page d'accueil du joueur.
  *
- * Les niveaux forment une ligne de stations (esthetique "Mini Metro") qui
- * apparait de maniere echelonnee. Chaque station indique sa difficulte et le
- * meilleur score du joueur. Le niveau a jouer "respire" doucement.
+ * Les niveaux de la campagne forment une ligne horizontale de stations
+ * (esthetique "Mini Metro") parcourue sans barre de defilement, a l'aide de
+ * deux fleches. Deux modes complementaires sont proposes : le mode Histoire
+ * et le mode sans fin.
  */
 public class HomeController {
 
+    private static final double CARD_WIDTH = 112;
+
     private final SceneManager sceneManager;
     private final DatabaseManager db = DatabaseManager.getInstance();
+    private ScrollPane routeScroll;
 
     public HomeController(SceneManager sceneManager) {
         this.sceneManager = sceneManager;
@@ -45,6 +57,7 @@ public class HomeController {
 
         Map<Integer, Integer> bests = db.getLevelBests(username);
         int endlessBest = db.getEndlessBest(username);
+        int storyProgress = db.getStoryProgress(username);
         int completed = bests.size();
         int totalScore = 0;
         for (int value : bests.values()) {
@@ -53,8 +66,7 @@ public class HomeController {
         boolean endlessUnlocked = completed >= 3;
         int campaignCount = LevelLoader.getCampaignCount();
 
-        // niveau a mettre en avant : le premier deverrouille non termine
-        int current = -1;
+        int current = campaignCount - 1;
         for (int i = 0; i < campaignCount; i++) {
             boolean done = bests.containsKey(i);
             boolean unlocked = (i == 0) || bests.containsKey(i - 1);
@@ -66,39 +78,44 @@ public class HomeController {
 
         StackPane root = UIFactory.screen();
         VBox card = UIFactory.card();
-        card.setMaxWidth(640);
+        card.setMaxWidth(740);
         card.setMaxHeight(Region.USE_PREF_SIZE);
+        card.setSpacing(18);
         card.setPadding(new Insets(26, 30, 24, 30));
-        card.setSpacing(16);
 
-        // --- en-tete sobre ---
+        // --- en-tete ---
         Label heading = UIFactory.heading("SuperCat");
         Label who = new Label(username);
         who.setStyle("-fx-font-size: 13px; -fx-text-fill: " + Theme.TEXT_MUTED + ";");
         VBox header = new VBox(1, heading, who);
         header.setAlignment(Pos.CENTER);
 
-        // --- bandeau de statistiques ---
+        // --- statistiques ---
         HBox stats = new HBox(10,
-                statChip(completed + " / " + campaignCount, "TERMINES"),
+                statChip(completed + " / " + campaignCount, "NIVEAUX"),
                 statChip(String.valueOf(totalScore), "SCORE"),
                 statChip(String.valueOf(endlessBest), "SANS FIN"));
         stats.setAlignment(Pos.CENTER);
 
-        // --- ligne des niveaux ---
-        VBox route = new VBox(0);
-        for (int i = 0; i < campaignCount; i++) {
-            boolean done = bests.containsKey(i);
-            boolean unlocked = (i == 0) || bests.containsKey(i - 1);
-            int best = done ? bests.get(i) : 0;
-            route.getChildren().add(levelStation(i, unlocked, done, best, i == current));
-        }
-        route.getChildren().add(endlessStation(endlessUnlocked, endlessBest));
+        // --- modes ---
+        String storyLine = (storyProgress >= Story.chapterCount())
+                ? "Histoire terminee"
+                : "Chapitre " + (storyProgress + 1) + " / " + Story.chapterCount();
+        HBox modes = new HBox(12,
+                modeCard("Mode Histoire", storyLine, true, sceneManager::showStory),
+                modeCard("Mode sans fin",
+                        endlessUnlocked ? "Record : " + endlessBest + " salles"
+                                        : "3 niveaux requis",
+                        endlessUnlocked, sceneManager::showEndless));
+        modes.setAlignment(Pos.CENTER);
 
-        ScrollPane scroll = new ScrollPane(route);
-        scroll.setFitToWidth(true);
-        scroll.setPrefHeight(338);
-        scroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        // --- ligne horizontale des niveaux ---
+        Label routeLabel = new Label("LA CAMPAGNE");
+        routeLabel.setStyle("-fx-font-size: 10px; -fx-font-weight: 600; -fx-text-fill: "
+                + Theme.TEXT_MUTED + ";");
+        HBox routeRow = buildRoute(bests, current, campaignCount);
+        VBox routeSection = new VBox(6, routeLabel, routeRow);
+        routeSection.setAlignment(Pos.CENTER_LEFT);
 
         // --- pied de page ---
         Button profile = UIFactory.secondaryButton("Profil");
@@ -112,155 +129,185 @@ public class HomeController {
         HBox footer = new HBox(9, profile, leaderboard, settings, logout);
         footer.setAlignment(Pos.CENTER);
 
-        card.getChildren().setAll(header, stats, scroll, footer);
+        card.getChildren().setAll(header, stats, modes, routeSection, footer);
         root.getChildren().add(card);
 
-        // apparition echelonnee des elements
+        // apparition echelonnee
         UIFactory.fadeInUp(header, 60);
         UIFactory.fadeInUp(stats, 150);
-        int delay = 260;
-        for (Node station : route.getChildren()) {
-            UIFactory.fadeInUp(station, delay);
-            delay += 52;
+        UIFactory.fadeInUp(modes, 240);
+        UIFactory.fadeInUp(routeSection, 330);
+        UIFactory.fadeInUp(footer, 430);
+
+        // place le niveau courant dans le champ de vision
+        if (campaignCount > 1) {
+            routeScroll.setHvalue((double) current / (campaignCount - 1));
         }
-        UIFactory.fadeInUp(footer, delay + 60);
         return root;
     }
 
-    // ----- Bandeau de statistiques -----
-    private VBox statChip(String value, String caption) {
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-font-size: 19px; -fx-font-weight: bold; -fx-text-fill: "
-                + Theme.ACCENT + ";");
-        Label captionLabel = new Label(caption);
-        captionLabel.setStyle("-fx-font-size: 9.5px; -fx-font-weight: bold; -fx-text-fill: "
-                + Theme.TEXT_MUTED + ";");
-        VBox chip = new VBox(2, valueLabel, captionLabel);
-        chip.setAlignment(Pos.CENTER);
-        chip.setMinWidth(168);
-        chip.setStyle("-fx-background-color: #F2ECE1; -fx-background-radius: 14; "
-                + "-fx-padding: 11 14 11 14;");
-        return chip;
-    }
-
-    // ----- Station d'un niveau de campagne -----
-    private HBox levelStation(int index, boolean unlocked, boolean done, int best, boolean current) {
-        StackPane node = circleNode(String.valueOf(index + 1), unlocked, done, current);
-
-        Label name = new Label(LevelLoader.getLevelName(index));
-        name.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + Theme.TEXT_DARK + ";");
-        String difficulty = LevelLoader.getDifficultyLabel(index);
-        Label diffTag = UIFactory.tag(difficulty, difficultyColor(difficulty), "white");
-
-        Label score = new Label(done ? best + " pts" : "");
-        score.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: " + Theme.ACCENT + ";");
-
-        return station(node, name, diffTag, score, unlocked,
-                () -> sceneManager.showCampaignLevel(index));
-    }
-
-    // ----- Station du mode sans fin -----
-    private HBox endlessStation(boolean unlocked, int best) {
-        StackPane node = squareNode(unlocked);
-
-        Label name = new Label("Mode sans fin");
-        name.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + Theme.TEXT_DARK + ";");
-        Label tag = UIFactory.tag("Infini", Theme.GOLD, "white");
-
-        Label score = new Label(unlocked ? (best + " salles") : "3 niveaux requis");
-        score.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: "
-                + (unlocked ? Theme.GOLD : Theme.TEXT_MUTED) + ";");
-
-        return station(node, name, tag, score, unlocked, sceneManager::showEndless);
-    }
-
-    /** Assemble une station : noeud, nom, etiquette, score, interaction. */
-    private HBox station(StackPane node, Label name, Label tag, Label score,
-                         boolean unlocked, Runnable onClick) {
-        HBox titleRow = new HBox(8, name, tag);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(titleRow, Priority.ALWAYS);
-
-        HBox row = new HBox(12, node, titleRow, score);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(0, 16, 0, 4));
-
-        if (unlocked) {
-            String idle = "-fx-background-color: transparent;";
-            String hover = "-fx-background-color: rgba(224,138,111,0.12);";
-            row.setStyle(idle);
-            row.setOnMouseEntered(e -> {
-                row.setStyle(hover);
-                row.setScaleX(1.012);
-                row.setScaleY(1.012);
-            });
-            row.setOnMouseExited(e -> {
-                row.setStyle(idle);
-                row.setScaleX(1.0);
-                row.setScaleY(1.0);
-            });
-            row.setOnMouseClicked(e -> onClick.run());
-            row.setStyle(idle + " -fx-cursor: hand;");
-        } else {
-            row.setOpacity(0.45);
+    // ----- Ligne horizontale des niveaux -----
+    private HBox buildRoute(Map<Integer, Integer> bests, int current, int campaignCount) {
+        HBox route = new HBox(0);
+        route.setAlignment(Pos.TOP_CENTER);
+        for (int i = 0; i < campaignCount; i++) {
+            boolean done = bests.containsKey(i);
+            boolean unlocked = (i == 0) || bests.containsKey(i - 1);
+            int best = done ? bests.get(i) : 0;
+            route.getChildren().add(levelCard(i, unlocked, done, best, i == current));
         }
+
+        routeScroll = new ScrollPane(route);
+        routeScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        routeScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        routeScroll.setFitToHeight(true);
+        routeScroll.setPrefViewportWidth(560);
+        routeScroll.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        routeScroll.setOnScroll(e -> routeScroll.setHvalue(
+                routeScroll.getHvalue() - e.getDeltaY() / 1400.0));
+        HBox.setHgrow(routeScroll, Priority.ALWAYS);
+
+        Button left = arrowButton(true);
+        left.setOnAction(e -> animateScroll(routeScroll.getHvalue() - 0.32));
+        Button right = arrowButton(false);
+        right.setOnAction(e -> animateScroll(routeScroll.getHvalue() + 0.32));
+
+        HBox row = new HBox(6, left, routeScroll, right);
+        row.setAlignment(Pos.CENTER);
         return row;
     }
 
-    // ----- Noeuds geometriques de la "ligne" -----
-    private StackPane circleNode(String text, boolean unlocked, boolean done, boolean pulse) {
-        Circle circle = new Circle(17);
+    private void animateScroll(double target) {
+        double clamped = Math.max(0, Math.min(1, target));
+        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(260),
+                new KeyValue(routeScroll.hvalueProperty(), clamped, Interpolator.EASE_BOTH)));
+        timeline.play();
+    }
+
+    /** Carte verticale d'un niveau de campagne (station de la ligne). */
+    private VBox levelCard(int index, boolean unlocked, boolean done, int best, boolean current) {
+        Circle circle = new Circle(15);
         if (done) {
             circle.setFill(Color.web(Theme.ACCENT));
         } else if (unlocked) {
-            circle.setFill(Color.web("#FBF7F0"));
+            circle.setFill(Color.web("#FCFAF5"));
             circle.setStroke(Color.web(Theme.ACCENT));
-            circle.setStrokeWidth(2.5);
+            circle.setStrokeWidth(2.4);
         } else {
             circle.setFill(Color.web(Theme.LOCKED));
         }
-        Label label = new Label(text);
-        label.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: "
+        Label number = new Label(String.valueOf(index + 1));
+        number.setStyle("-fx-font-size: 12px; -fx-font-weight: 700; -fx-text-fill: "
                 + (unlocked && !done ? Theme.ACCENT : "white") + ";");
-        StackPane inner = new StackPane(circle, label);
-        if (pulse) {
-            UIFactory.breathe(inner, 1.14, 1000);
+        StackPane node = new StackPane(circle, number);
+        if (current) {
+            UIFactory.breathe(node, 1.14, 1100);
         }
-        return assembleNode(inner);
-    }
 
-    private StackPane squareNode(boolean unlocked) {
-        Region square = new Region();
-        square.setMinSize(32, 32);
-        square.setMaxSize(32, 32);
-        square.setStyle("-fx-background-radius: 9; -fx-background-color: "
-                + (unlocked ? Theme.GOLD : Theme.LOCKED) + ";");
-        StackPane inner = new StackPane(square);
-        return assembleNode(inner);
-    }
-
-    /** Pose un noeud sur un segment de "ligne" vertical (continuite du trace). */
-    private StackPane assembleNode(Node inner) {
         Region line = new Region();
-        line.setMinWidth(4);
-        line.setMaxWidth(4);
-        line.setMinHeight(66);
-        line.setMaxHeight(Double.MAX_VALUE);
-        line.setStyle("-fx-background-color: #D9CFC2;");
+        line.setMinHeight(4);
+        line.setMaxHeight(4);
+        line.setMaxWidth(Double.MAX_VALUE);
+        line.setStyle("-fx-background-color: #DCD2C4;");
+        StackPane nodeArea = new StackPane(line, node);
+        nodeArea.setMinHeight(34);
 
-        StackPane node = new StackPane(line, inner);
-        node.setMinWidth(50);
-        node.setPrefWidth(50);
-        return node;
+        Label name = new Label(LevelLoader.getLevelName(index));
+        name.setWrapText(true);
+        name.setMaxWidth(98);
+        name.setMinHeight(28);
+        name.setStyle("-fx-font-size: 10.5px; -fx-font-weight: 600; -fx-text-alignment: center; "
+                + "-fx-text-fill: " + (unlocked ? Theme.TEXT_DARK : Theme.TEXT_MUTED) + ";");
+
+        Label score = new Label(done ? best + " pts" : (unlocked ? "a jouer" : "verrouille"));
+        score.setStyle("-fx-font-size: 10px; -fx-text-fill: "
+                + (done ? Theme.ACCENT : Theme.TEXT_MUTED) + ";");
+
+        VBox cardBox = new VBox(4, nodeArea, name, score);
+        cardBox.setAlignment(Pos.TOP_CENTER);
+        cardBox.setMinWidth(CARD_WIDTH);
+        cardBox.setPrefWidth(CARD_WIDTH);
+        cardBox.setMaxWidth(CARD_WIDTH);
+        cardBox.setPadding(new Insets(6, 2, 8, 2));
+
+        if (unlocked) {
+            String idle = "-fx-background-color: transparent; -fx-cursor: hand;";
+            String hover = "-fx-background-color: rgba(219,139,107,0.12); "
+                    + "-fx-background-radius: 12; -fx-cursor: hand;";
+            cardBox.setStyle(idle);
+            cardBox.setOnMouseEntered(e -> cardBox.setStyle(hover));
+            cardBox.setOnMouseExited(e -> cardBox.setStyle(idle));
+            cardBox.setOnMouseClicked(e -> sceneManager.showCampaignLevel(index));
+        } else {
+            cardBox.setOpacity(0.5);
+        }
+        return cardBox;
     }
 
-    private String difficultyColor(String difficulty) {
-        return switch (difficulty) {
-            case "Facile" -> Theme.SUCCESS;
-            case "Moyen" -> Theme.SECONDARY;
-            case "Difficile" -> Theme.GOLD;
-            case "Expert" -> Theme.ACCENT;
-            default -> Theme.DANGER;
-        };
+    // ----- Cartes de mode -----
+    private VBox modeCard(String title, String subtitle, boolean enabled, Runnable onClick) {
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: 700; -fx-text-fill: "
+                + (enabled ? Theme.TEXT_DARK : Theme.TEXT_MUTED) + ";");
+        Label subLabel = new Label(subtitle);
+        subLabel.setStyle("-fx-font-size: 12px; -fx-text-fill: " + Theme.TEXT_MUTED + ";");
+
+        VBox box = new VBox(3, titleLabel, subLabel);
+        box.setAlignment(Pos.CENTER_LEFT);
+        box.setMinWidth(320);
+        box.setPadding(new Insets(14, 18, 14, 18));
+        String idle = "-fx-background-color: #F2ECE1; -fx-background-radius: 14;";
+        String hover = "-fx-background-color: #EBE3D4; -fx-background-radius: 14; -fx-cursor: hand;";
+        if (enabled) {
+            box.setStyle(idle + " -fx-cursor: hand;");
+            box.setOnMouseEntered(e -> box.setStyle(hover));
+            box.setOnMouseExited(e -> box.setStyle(idle + " -fx-cursor: hand;"));
+            box.setOnMouseClicked(e -> onClick.run());
+        } else {
+            box.setStyle(idle);
+            box.setOpacity(0.55);
+        }
+        return box;
+    }
+
+    // ----- Petits composants -----
+    private VBox statChip(String value, String caption) {
+        Label valueLabel = new Label(value);
+        valueLabel.setStyle("-fx-font-size: 18px; -fx-font-weight: 700; -fx-text-fill: "
+                + Theme.ACCENT + ";");
+        Label captionLabel = new Label(caption);
+        captionLabel.setStyle("-fx-font-size: 9.5px; -fx-font-weight: 600; -fx-text-fill: "
+                + Theme.TEXT_MUTED + ";");
+        VBox chip = new VBox(2, valueLabel, captionLabel);
+        chip.setAlignment(Pos.CENTER);
+        chip.setMinWidth(150);
+        chip.setStyle("-fx-background-color: #F2ECE1; -fx-background-radius: 14; "
+                + "-fx-padding: 10 14 10 14;");
+        return chip;
+    }
+
+    private Button arrowButton(boolean left) {
+        Button button = new Button();
+        Canvas canvas = new Canvas(20, 20);
+        GraphicsContext g = canvas.getGraphicsContext2D();
+        g.setStroke(Color.web(Theme.TEXT_DARK));
+        g.setLineWidth(2.2);
+        g.setLineCap(StrokeLineCap.ROUND);
+        if (left) {
+            g.strokeLine(13, 4, 7, 10);
+            g.strokeLine(7, 10, 13, 16);
+        } else {
+            g.strokeLine(7, 4, 13, 10);
+            g.strokeLine(13, 10, 7, 16);
+        }
+        button.setGraphic(canvas);
+        button.setMinSize(40, 40);
+        button.setMaxSize(40, 40);
+        String idle = "-fx-background-color: #F2ECE1; -fx-background-radius: 20; -fx-cursor: hand;";
+        String hover = "-fx-background-color: #E6DECF; -fx-background-radius: 20; -fx-cursor: hand;";
+        button.setStyle(idle);
+        button.setOnMouseEntered(e -> button.setStyle(hover));
+        button.setOnMouseExited(e -> button.setStyle(idle));
+        return button;
     }
 }

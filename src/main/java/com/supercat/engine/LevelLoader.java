@@ -40,6 +40,9 @@ public final class LevelLoader {
     private static final int ROWS = Theme.ROWS;
     private static final int CAMPAIGN_COUNT = 12;
 
+    /** Indice de base des niveaux du mode Histoire (apres campagne et mode sans fin). */
+    public static final int STORY_BASE = 1000;
+
     private static final String[] NAMES = {
             "Le Jardin", "Les Galeries", "Le Vieux Grenier", "La Citerne",
             "Les Cloitres", "Le Dedale", "La Cave Oubliee", "Les Toits",
@@ -51,8 +54,21 @@ public final class LevelLoader {
         return CAMPAIGN_COUNT;
     }
 
+    /** Indice de niveau correspondant a un chapitre du mode Histoire. */
+    public static int storyIndex(int chapter) {
+        return STORY_BASE + chapter;
+    }
+
+    /** Difficulte effective d'un indice de niveau (gere le mode Histoire). */
+    private static int difficultyOf(int index) {
+        return (index >= STORY_BASE) ? (2 + (index - STORY_BASE)) : index;
+    }
+
     /** Nom d'un niveau. */
     public static String getLevelName(int index) {
+        if (index >= STORY_BASE) {
+            return Story.room(index - STORY_BASE);
+        }
         if (index >= 0 && index < CAMPAIGN_COUNT) {
             return NAMES[index];
         }
@@ -61,16 +77,17 @@ public final class LevelLoader {
 
     /** Etiquette de difficulte d'un niveau. */
     public static String getDifficultyLabel(int index) {
-        if (index <= 2) {
+        int diff = difficultyOf(index);
+        if (diff <= 2) {
             return "Facile";
         }
-        if (index <= 5) {
+        if (diff <= 5) {
             return "Moyen";
         }
-        if (index <= 8) {
+        if (diff <= 8) {
             return "Difficile";
         }
-        if (index <= 11) {
+        if (diff <= 11) {
             return "Expert";
         }
         return "Extreme";
@@ -78,9 +95,10 @@ public final class LevelLoader {
 
     /** Genere (de facon deterministe) le niveau d'indice donne. */
     public static Level load(int index) {
-        Random rng = new Random(index * 2654435761L + 12345L);
+        long seed = (index >= STORY_BASE ? (index + 777L) : index) * 2654435761L + 12345L;
+        Random rng = new Random(seed);
         boolean horizontal = (index % 2 == 0);
-        int diff = index;
+        int diff = difficultyOf(index);
 
         int fishCount = clamp(5 + diff, 5, 18);
         int dogCount = clamp(1 + (diff * 2) / 3, 1, 11);

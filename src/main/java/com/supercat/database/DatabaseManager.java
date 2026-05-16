@@ -270,6 +270,25 @@ public class DatabaseManager {
         return getLevelBest(username, ENDLESS_LEVEL);
     }
 
+    /** Marqueur de niveau pour la progression du mode Histoire. */
+    private static final int STORY_LEVEL = -2;
+
+    /** Enregistre la progression du mode Histoire (nombre de chapitres termines). */
+    public boolean saveStoryProgress(String username, int chaptersCompleted) {
+        return saveLevelScore(username, STORY_LEVEL, chaptersCompleted);
+    }
+
+    /** Nombre de chapitres du mode Histoire termines par le joueur. */
+    public int getStoryProgress(String username) {
+        return getLevelBest(username, STORY_LEVEL);
+    }
+
+    /** Remet la progression du mode Histoire a zero. */
+    public void resetStory(String username) {
+        scores.deleteMany(Filters.and(Filters.eq("username", username),
+                Filters.eq("level", STORY_LEVEL)));
+    }
+
     /** Reinitialise tous les scores d'un joueur (action administrateur, RM5). */
     public boolean resetUserScores(String username) {
         scores.deleteMany(Filters.eq("username", username));
