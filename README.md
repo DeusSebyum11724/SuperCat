@@ -65,7 +65,9 @@ Le jeu propose une **campagne de 12 niveaux** de difficulté croissante et un
 - Affichage **plein écran** avec mise à l'échelle proportionnelle.
 - **Génération procédurale** : chaque niveau est un labyrinthe généré
   automatiquement (toujours résoluble), identique à chaque fois.
-- **Musique d'ambiance** synthétisée + bouton activer/désactiver.
+- **Musique d'ambiance** : une berceuse douce entièrement synthétisée, jouée
+  en continu d'un écran à l'autre. Un **miaou** retentit quand le chat attrape
+  un poisson d'or. Activation et volume réglables dans les paramètres.
 - **Écran-titre animé** à l'ouverture, et animations partout : démarche du
   chat, patrouille des chiens, apparition échelonnée des niveaux, fondus.
 - **HUD schématique** : barre de temps, points pour les poissons, étiquette
@@ -104,7 +106,7 @@ Le projet implémente largement les critères de Type A (2 suffisent) :
 | Interface / rendu | JavaFX 25 (`Canvas`, `AnimationTimer`) |
 | Base de données | **MongoDB** (pilote `mongodb-driver-sync`) |
 | E-mails | **Jakarta Mail** (SMTP Gmail) |
-| Musique | `javax.sound.sampled` (synthèse audio, aucun fichier externe) |
+| Musique et sons | `javax.sound.sampled` (berceuse et miaou synthétisés, aucun fichier externe) |
 | Sécurité | BCrypt (`jbcrypt`) pour le hachage des mots de passe |
 | Build | Apache Maven |
 | Tests | JUnit 5 |

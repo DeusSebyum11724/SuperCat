@@ -1,6 +1,7 @@
 package com.supercat.controller;
 
 import com.supercat.SceneManager;
+import com.supercat.engine.MusicPlayer;
 import com.supercat.service.Settings;
 import com.supercat.ui.Theme;
 import com.supercat.ui.UIFactory;
@@ -43,7 +44,10 @@ public class SettingsController {
                 section("Affichage"),
                 row("Plein ecran", toggle(Settings.isFullscreen(), this::onFullscreen)),
                 section("Audio"),
-                row("Musique", toggle(Settings.isMusicEnabled(), Settings::setMusicEnabled)),
+                row("Musique", toggle(Settings.isMusicEnabled(), enabled -> {
+                    Settings.setMusicEnabled(enabled);
+                    MusicPlayer.instance().setMuted(!enabled);
+                })),
                 row("Volume", volumeControl()),
                 section("Accessibilite"),
                 row("Animations reduites",
@@ -129,6 +133,7 @@ public class SettingsController {
             final int index = i;
             segment.setOnMouseClicked(e -> {
                 Settings.setMusicVolume((index + 1) / 10.0);
+                MusicPlayer.instance().refreshVolume();
                 render.run();
             });
             segments[i] = segment;

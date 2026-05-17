@@ -48,7 +48,7 @@ public abstract class StoryMiniGame {
     protected final DatabaseManager db = DatabaseManager.getInstance();
     protected final int chapter;
 
-    private final MusicPlayer music = new MusicPlayer();
+    private final MusicPlayer music = MusicPlayer.instance();
     private BorderPane root;
     private StackPane overlay;
     private boolean paused;
@@ -275,13 +275,11 @@ public abstract class StoryMiniGame {
 
     private void exitToStory() {
         stopLoop();
-        music.stop();
         sceneManager.showStory();
     }
 
     private void exitToHome() {
         stopLoop();
-        music.stop();
         sceneManager.showHome();
     }
 

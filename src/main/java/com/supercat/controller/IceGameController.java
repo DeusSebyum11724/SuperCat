@@ -2,6 +2,7 @@ package com.supercat.controller;
 
 import com.supercat.SceneManager;
 import com.supercat.engine.IcePuzzle;
+import com.supercat.engine.SoundEffects;
 import com.supercat.ui.CatArt;
 import com.supercat.ui.Theme;
 import javafx.animation.AnimationTimer;
@@ -161,6 +162,7 @@ public class IceGameController extends StoryMiniGame {
             if (!collected[i] && fish.get(i)[0] == r && fish.get(i)[1] == c) {
                 collected[i] = true;
                 fishLeft--;
+                SoundEffects.meow();
                 updateGoal();
             }
         }

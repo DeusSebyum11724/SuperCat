@@ -90,7 +90,7 @@ public class GameController implements GameListener {
     private void initialize() {
         Canvas canvas = new Canvas(Theme.CANVAS_WIDTH, Theme.CANVAS_HEIGHT);
         engine = new GameEngine(canvas.getGraphicsContext2D(), activeKeys, this);
-        music = new MusicPlayer();
+        music = MusicPlayer.instance();
 
         overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(48,44,54,0.46);");
@@ -450,13 +450,11 @@ public class GameController implements GameListener {
     private void exitToHome() {
         finishEndlessRun();
         engine.stop();
-        music.stop();
         sceneManager.showHome();
     }
 
     private void exitToStory() {
         engine.stop();
-        music.stop();
         sceneManager.showStory();
     }
 

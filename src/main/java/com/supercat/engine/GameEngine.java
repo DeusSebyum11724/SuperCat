@@ -231,6 +231,7 @@ public class GameEngine {
                 f.collect();
                 score += f.getValue();
                 fishCollected++;
+                SoundEffects.meow();
                 effects.add(new FloatingText(f.getCenterX(), f.getY(), "+100", Theme.FISH_DARK));
                 if (fishCollected >= fishTotal) {
                     exit.unlock();

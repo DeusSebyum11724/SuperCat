@@ -1,6 +1,8 @@
 package com.supercat;
 
 import com.supercat.database.DatabaseManager;
+import com.supercat.engine.MusicPlayer;
+import com.supercat.engine.SoundEffects;
 import com.supercat.service.Settings;
 import com.supercat.ui.Theme;
 import javafx.application.Application;
@@ -35,6 +37,10 @@ public class App extends Application {
         Scene scene = new Scene(new StackPane(), Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
         SceneManager sceneManager = new SceneManager(stage, scene);
 
+        // musique d'ambiance continue + preparation du miaou
+        MusicPlayer.instance().start();
+        SoundEffects.preload();
+
         stage.setScene(scene);
         stage.setTitle("SuperCat");
         stage.setResizable(false);
@@ -53,6 +59,7 @@ public class App extends Application {
 
     @Override
     public void stop() {
+        MusicPlayer.instance().stop();
         if (databaseReady) {
             DatabaseManager.getInstance().close();
         }
