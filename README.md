@@ -163,6 +163,41 @@ mvn test         # exécuter les tests unitaires
 
 ---
 
+## 🍎 Installer comme application macOS
+
+Pour disposer de **SuperCat dans le dossier Applications** et le lancer comme
+n'importe quelle application (sans passer par Maven) :
+
+```bash
+./package-mac.sh
+```
+
+Le script :
+1. construit un *jar* autonome contenant toutes les dépendances ;
+2. utilise **`jpackage`** pour produire `SuperCat.app`, qui **embarque son
+   propre environnement Java** — aucune installation de Java n'est requise
+   pour *lancer* l'application ensuite ;
+3. copie `config.properties` dans
+   `~/Library/Application Support/SuperCat/` (les identifiants sont lus à cet
+   emplacement quand l'application tourne hors du projet) ;
+4. installe `SuperCat.app` dans `/Applications`.
+
+Ensuite, SuperCat se lance depuis le **Launchpad** ou le dossier
+**Applications**, comme une application normale.
+
+> **Prérequis pour *construire* l'application** : un JDK 21+ (incluant l'outil
+> `jpackage`) et Apache Maven. Ces outils ne sont nécessaires que pour la
+> construction, pas pour l'exécution.
+
+> Si tu n'as pas de `config.properties`, crée le fichier
+> `~/Library/Application Support/SuperCat/config.properties` (modèle :
+> `config.properties.example`) pour que l'application puisse se connecter.
+
+> Pour ajouter une icône personnalisée, fournis un fichier `.icns` à
+> `jpackage` via l'option `--icon` dans `package-mac.sh`.
+
+---
+
 ## 🕹️ Comment jouer
 
 1. **Crée un compte** : un code de vérification est envoyé à ton adresse e-mail.

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -14,7 +15,10 @@ import java.util.Properties;
  * Ordre de priorite :
  *  1. variables d'environnement (MONGODB_URI_CATALOG, GMAIL_USER,
  *     GMAIL_APP_PASSWORD) ;
- *  2. fichier "config.properties" a la racine du projet.
+ *  2. premier fichier "config.properties" trouve parmi :
+ *       - le repertoire courant (developpement : mvn javafx:run) ;
+ *       - ~/Library/Application Support/SuperCat/ (application macOS) ;
+ *       - ~/.supercat/ (autres systemes).
  *
  * Le fichier config.properties est exclu de Git : les identifiants ne sont
  * donc jamais publies sur le depot public.
@@ -24,18 +28,35 @@ public final class Config {
     private static final Properties FILE_PROPS = new Properties();
 
     static {
-        Path path = Path.of("config.properties");
-        if (Files.exists(path)) {
-            try (InputStream in = new FileInputStream(path.toFile())) {
-                FILE_PROPS.load(in);
-            } catch (IOException e) {
-                System.err.println("Lecture de config.properties impossible : " + e.getMessage());
+        for (Path path : candidateFiles()) {
+            if (Files.exists(path)) {
+                try (InputStream in = new FileInputStream(path.toFile())) {
+                    FILE_PROPS.load(in);
+                    break;
+                } catch (IOException e) {
+                    System.err.println("Lecture de " + path + " impossible : " + e.getMessage());
+                }
             }
         }
     }
 
     private Config() {
         // classe utilitaire
+    }
+
+    /**
+     * Emplacements ou chercher config.properties, par ordre de priorite. Le
+     * repertoire courant sert au developpement ; les emplacements dans le
+     * dossier personnel servent a l'application installee, dont le repertoire
+     * courant n'est pas celui du projet.
+     */
+    private static List<Path> candidateFiles() {
+        String home = System.getProperty("user.home", ".");
+        return List.of(
+                Path.of("config.properties"),
+                Path.of(home, "Library", "Application Support", "SuperCat",
+                        "config.properties"),
+                Path.of(home, ".supercat", "config.properties"));
     }
 
     private static String resolve(String envName, String propertyName) {
