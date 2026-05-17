@@ -14,6 +14,7 @@ import com.supercat.controller.SplashController;
 import com.supercat.controller.StoryController;
 import com.supercat.controller.StudioSplashController;
 import com.supercat.engine.LevelLoader;
+import com.supercat.engine.MusicPlayer;
 import com.supercat.engine.Story;
 import com.supercat.model.User;
 import com.supercat.service.Settings;
@@ -82,42 +83,43 @@ public class SceneManager {
 
     public void showStudioSplash() {
         clearKeyHandlers();
-        setRoot(new StudioSplashController(this).getView(), COZY_FRAME);
+        setRoot(new StudioSplashController(this).getView(), COZY_FRAME, false);
     }
 
     public void showSplash() {
         clearKeyHandlers();
-        setRoot(new SplashController(this).getView(), CALM_FRAME);
+        setRoot(new SplashController(this).getView(), CALM_FRAME, false);
     }
 
     public void showLogin() {
         clearKeyHandlers();
-        setRoot(new LoginController(this).getView(), CALM_FRAME);
+        setRoot(new LoginController(this).getView(), CALM_FRAME, false);
     }
 
     public void showHome() {
         clearKeyHandlers();
-        setRoot(new HomeController(this).getView(), CALM_FRAME);
+        setRoot(new HomeController(this).getView(), CALM_FRAME, false);
     }
 
     /** Affiche la ligne horizontale des niveaux de la campagne. */
     public void showCampaign() {
         clearKeyHandlers();
-        setRoot(new CampaignController(this).getView(), CALM_FRAME);
+        setRoot(new CampaignController(this).getView(), CALM_FRAME, false);
     }
 
     public void showCampaignLevel(int levelIndex) {
-        setRoot(new GameController(this, levelIndex).getView(), CALM_FRAME);
+        setRoot(new GameController(this, levelIndex).getView(), CALM_FRAME, true);
     }
 
     public void showEndless() {
-        setRoot(new GameController(this, LevelLoader.getCampaignCount()).getView(), CALM_FRAME);
+        setRoot(new GameController(this, LevelLoader.getCampaignCount()).getView(),
+                CALM_FRAME, true);
     }
 
     /** Affiche l'ecran narratif du chapitre courant du mode Histoire. */
     public void showStory() {
         clearKeyHandlers();
-        setRoot(new StoryController(this).getView(), CALM_FRAME);
+        setRoot(new StoryController(this).getView(), CALM_FRAME, false);
     }
 
     /** Lance le mini-jeu d'un chapitre du mode Histoire (selon son type). */
@@ -128,27 +130,27 @@ public class SceneManager {
             case MEMORY -> new MemoryGameController(this, chapter).getView();
             case MAZE -> new GameController(this, LevelLoader.storyIndex(chapter)).getView();
         };
-        setRoot(screen, CALM_FRAME);
+        setRoot(screen, CALM_FRAME, true);
     }
 
     public void showAdmin() {
         clearKeyHandlers();
-        setRoot(new AdminController(this).getView(), CALM_FRAME);
+        setRoot(new AdminController(this).getView(), CALM_FRAME, false);
     }
 
     public void showProfile() {
         clearKeyHandlers();
-        setRoot(new ProfileController(this).getView(), CALM_FRAME);
+        setRoot(new ProfileController(this).getView(), CALM_FRAME, false);
     }
 
     public void showLeaderboard() {
         clearKeyHandlers();
-        setRoot(new LeaderboardController(this).getView(), CALM_FRAME);
+        setRoot(new LeaderboardController(this).getView(), CALM_FRAME, false);
     }
 
     public void showSettings() {
         clearKeyHandlers();
-        setRoot(new SettingsController(this).getView(), CALM_FRAME);
+        setRoot(new SettingsController(this).getView(), CALM_FRAME, false);
     }
 
     public void logout() {
@@ -158,7 +160,13 @@ public class SceneManager {
 
     // ----- Mecanique interne -----
 
-    private void setRoot(Parent screen, String frameBackground) {
+    private void setRoot(Parent screen, String frameBackground, boolean inGame) {
+        // berceuse douce dans l'interface, melodie chiptune pendant les parties
+        if (inGame) {
+            MusicPlayer.instance().playGame();
+        } else {
+            MusicPlayer.instance().playUi();
+        }
         frame.setStyle("-fx-background-color: " + frameBackground + ";");
         if (currentScreen != null) {
             currentScreen.getTransforms().remove(viewScale);

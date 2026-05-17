@@ -37,8 +37,7 @@ public class App extends Application {
         Scene scene = new Scene(new StackPane(), Theme.SCENE_WIDTH, Theme.SCENE_HEIGHT);
         SceneManager sceneManager = new SceneManager(stage, scene);
 
-        // musique d'ambiance continue + preparation du miaou
-        MusicPlayer.instance().start();
+        // preparation du miaou (la musique demarre avec le premier ecran)
         SoundEffects.preload();
 
         stage.setScene(scene);

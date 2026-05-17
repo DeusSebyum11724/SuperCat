@@ -87,7 +87,6 @@ public abstract class StoryMiniGame {
         scene.setOnKeyPressed(this::handleKeyPressed);
         scene.setOnKeyReleased(e -> onKeyReleased(e.getCode()));
 
-        music.start();
         return root;
     }
 

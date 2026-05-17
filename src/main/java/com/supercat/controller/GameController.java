@@ -115,7 +115,6 @@ public class GameController implements GameListener {
 
         engine.playLevel(currentIndex);
         engine.start();
-        music.start();
     }
 
     /** Bandeau d'informations leger affiche au-dessus du labyrinthe. */
