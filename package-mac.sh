@@ -42,6 +42,13 @@ fi
 JDK_HOME="$(cd "$JDK_HOME" && pwd -P)"
 echo "    Runtime Java embarque : $JDK_HOME"
 
+# icone de l'application (voir packaging/make-icon.sh pour la regenerer)
+ICON_OPT=""
+if [ -f packaging/SuperCat.icns ]; then
+    ICON_OPT="--icon packaging/SuperCat.icns"
+    echo "    Icone : packaging/SuperCat.icns"
+fi
+
 jpackage \
     --type app-image \
     --name "$APP_NAME" \
@@ -53,6 +60,7 @@ jpackage \
     --main-class com.supercat.Main \
     --runtime-image "$JDK_HOME" \
     --java-options "--enable-native-access=ALL-UNNAMED" \
+    $ICON_OPT \
     --dest target/dist
 
 echo "==> Installation des identifiants (config.properties)..."
